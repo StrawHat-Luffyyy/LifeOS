@@ -1,0 +1,43 @@
+# =============================================================================
+# LifeOS — Docker Compose Development Override
+# =============================================================================
+# Usage: docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d
+#
+# Overrides for local development:
+# - Mounts source code as volumes for hot reload
+# - Uses tsx watch / next dev instead of production builds
+# =============================================================================
+
+services:
+  backend:
+    build:
+      context: .
+      dockerfile: packages/backend/Dockerfile.dev
+    volumes:
+      - ./packages/backend/src:/app/packages/backend/src
+      - ./packages/shared/src:/app/packages/shared/src
+    command: ["pnpm", "--filter", "@lifeos/backend", "dev"]
+    environment:
+      - NODE_ENV=development
+
+  worker:
+    build:
+      context: .
+      dockerfile: packages/backend/Dockerfile.dev
+    volumes:
+      - ./packages/backend/src:/app/packages/backend/src
+      - ./packages/shared/src:/app/packages/shared/src
+    command: ["pnpm", "--filter", "@lifeos/backend", "dev:worker"]
+    environment:
+      - NODE_ENV=development
+
+  frontend:
+    build:
+      context: .
+      dockerfile: packages/frontend/Dockerfile.dev
+    volumes:
+      - ./packages/frontend/src:/app/packages/frontend/src
+      - ./packages/shared/src:/app/packages/shared/src
+    command: ["pnpm", "--filter", "@lifeos/frontend", "dev"]
+    environment:
+      - NODE_ENV=development

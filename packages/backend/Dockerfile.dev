@@ -1,0 +1,25 @@
+# =============================================================================
+# Backend — Development Dockerfile
+# =============================================================================
+# Used with docker-compose.dev.yml for hot-reload development.
+
+FROM node:20-slim
+RUN corepack enable && corepack prepare pnpm@latest --activate
+
+WORKDIR /app
+
+# Copy workspace config
+COPY pnpm-workspace.yaml package.json pnpm-lock.yaml* ./
+COPY packages/shared/package.json packages/shared/
+COPY packages/backend/package.json packages/backend/
+COPY tsconfig.base.json ./
+
+# Install all dependencies
+RUN pnpm install --ignore-scripts
+
+# Copy source (will be overridden by volume mounts in dev)
+COPY packages/shared/ packages/shared/
+COPY packages/backend/ packages/backend/
+
+EXPOSE 4000
+CMD ["pnpm", "--filter", "@lifeos/backend", "dev"]

@@ -1,0 +1,38 @@
+{
+  "name": "lifeos",
+  "private": true,
+  "version": "0.0.0",
+  "description": "A persistent, context-aware personal operating system",
+  "scripts": {
+    "dev": "pnpm --filter @lifeos/backend dev & pnpm --filter @lifeos/frontend dev",
+    "dev:backend": "pnpm --filter @lifeos/backend dev",
+    "dev:frontend": "pnpm --filter @lifeos/frontend dev",
+    "build": "pnpm -r build",
+    "lint": "pnpm -r lint",
+    "lint:fix": "pnpm -r lint:fix",
+    "typecheck": "pnpm -r typecheck",
+    "test": "pnpm -r test",
+    "test:coverage": "pnpm -r test:coverage",
+    "format": "prettier --write \"**/*.{ts,tsx,js,json,md,yaml}\"",
+    "format:check": "prettier --check \"**/*.{ts,tsx,js,json,md,yaml}\"",
+    "db:generate": "pnpm --filter @lifeos/backend db:generate",
+    "db:migrate": "pnpm --filter @lifeos/backend db:migrate",
+    "db:push": "pnpm --filter @lifeos/backend db:push",
+    "db:studio": "pnpm --filter @lifeos/backend db:studio",
+    "docker:up": "docker compose up -d",
+    "docker:down": "docker compose down",
+    "docker:dev": "docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d",
+    "clean": "pnpm -r exec rm -rf dist .next node_modules/.cache"
+  },
+  "engines": {
+    "node": ">=20.0.0",
+    "pnpm": ">=9.0.0"
+  },
+  "devDependencies": {
+    "eslint": "^9.20.0",
+    "prettier": "^3.5.0",
+    "typescript": "^5.7.0",
+    "typescript-eslint": "^8.24.0"
+  },
+  "packageManager": "pnpm@11.9.0"
+}
