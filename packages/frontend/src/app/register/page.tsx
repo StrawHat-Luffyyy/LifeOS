@@ -3,7 +3,7 @@
 import { useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { api, setToken } from "@/lib/api";
+import { api, setTokens } from "@/lib/api";
 import { type AuthResponse } from "@lifeos/shared";
 
 export default function RegisterPage() {
@@ -25,7 +25,7 @@ export default function RegisterPage() {
         email,
         password,
       });
-      setToken(res.data.token);
+      setTokens(res.data.token, res.data.refreshToken);
       router.push("/dashboard");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Registration failed");

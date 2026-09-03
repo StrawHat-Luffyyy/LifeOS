@@ -5,6 +5,7 @@ import { createApp } from '../../app.js';
 import * as taskService from './task.service.js';
 import { config } from '../../config/index.js';
 import { NotFoundError } from '../../lib/errors.js';
+import { type TaskDto } from '@lifeos/shared';
 
 // Mock task.service.js
 vi.mock('./task.service.js', () => ({
@@ -49,7 +50,7 @@ describe('Task Routes Integration', () => {
 
   describe('POST /api/tasks', () => {
     it('creates a task and returns 201 on valid input', async () => {
-      const mockTask: import('@lifeos/shared').TaskDto = {
+      const mockTask: TaskDto = {
         id: '22222222-2222-2222-2222-222222222222',
         title: 'Review PRD',
         description: 'Check acceptance criteria',

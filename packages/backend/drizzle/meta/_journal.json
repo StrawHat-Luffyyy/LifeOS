@@ -8,6 +8,13 @@
       "when": 1788368717676,
       "tag": "0000_mute_nomad",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1788447399913,
+      "tag": "0001_cold_fat_cobra",
+      "breakpoints": true
     }
   ]
 }

@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
-import { api, getToken, clearToken } from "@/lib/api";
+import { api, getToken } from "@/lib/api";
 import { type TaskDto, type PaginatedResponse } from "@lifeos/shared";
 
 export default function DashboardPage() {
@@ -93,8 +93,8 @@ export default function DashboardPage() {
     }
   }
 
-  function handleLogout() {
-    clearToken();
+  async function handleLogout() {
+    await api.logout();
     router.push("/login");
   }
 

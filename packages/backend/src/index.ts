@@ -6,7 +6,7 @@ const app = createApp();
 
 const server = app.listen(config.PORT, () => {
   // eslint-disable-next-line no-console
-  console.log(`🚀 LifeOS backend running on port ${config.PORT} [${config.NODE_ENV}]`);
+  console.log(`LifeOS backend running on port ${config.PORT} [${config.NODE_ENV}]`);
 });
 
 // ---------------------------------------------------------------------------

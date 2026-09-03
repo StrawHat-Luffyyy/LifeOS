@@ -97,21 +97,24 @@ lifeos/
 
 See [docs/architecture.md](docs/architecture.md) for detailed architecture documentation.
 
-**Key principles:**
+**Key principles & security:**
 - **Memory First** — the system gets more useful as persistent understanding grows
 - **Structured Data Over Raw Chat** — important entities are explicit DB records
 - **Agents Reason, Services Execute** — LLM decides; deterministic services perform operations
 - **Human Control** — high-risk actions require confirmation
 - **Data Isolation** — user data must remain isolated
+- **Dual-Token Auth & Rate Limiting** — 15m access token (JWT), 30d refresh token (hashed in PostgreSQL), and 20 req/15min rate limiting on `/api/auth/*`
 
 ## Technology Stack
 
 | Layer | Technology |
 |---|---|
-| Frontend | Next.js, TypeScript, Tailwind CSS |
-| Backend | Express.js, TypeScript |
-| Database | PostgreSQL + pgvector |
+| Frontend | Next.js 16, TypeScript, Tailwind CSS |
+| Backend | Express.js 5, TypeScript |
+| Database | PostgreSQL 17 + pgvector (0.8.6) |
 | ORM | Drizzle ORM |
+| Authentication | Dual-token (15m JWT access + 30d revocable refresh token) |
+| Rate Limiting | express-rate-limit (20 req / 15 min per IP) |
 | AI Orchestration | LangGraph.js (Phase 2+) |
 | Background Jobs | Redis + BullMQ (Phase 2+) |
 | Infrastructure | Docker / Docker Compose |
@@ -120,7 +123,7 @@ See [docs/architecture.md](docs/architecture.md) for detailed architecture docum
 
 | Phase | Focus | Status |
 |---|---|---|
-| 0 — Foundation | Repo, Docker, DB, testing | ✅ In progress |
+| 0 — Foundation & Hardening | Repo, Docker, DB, Testing, Dual-Token Auth, E2E | Completed |
 | 1 — Productivity Core | Auth, Projects, Tasks, Notes, Activity | Planned |
 | 2 — AI Foundation | AI Chat, LLM Gateway, Tool Calling | Planned |
 | 3 — Memory & Knowledge | Memory, Embeddings, RAG, Documents | Planned |
