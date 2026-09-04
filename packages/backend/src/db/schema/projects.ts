@@ -3,7 +3,7 @@ import { users } from './users.js';
 
 export const projects = pgTable('projects', {
   id: uuid('id').defaultRandom().primaryKey(),
-  title: varchar('title', { length: 500 }).notNull(),
+  name: varchar('name', { length: 500 }).notNull(),
   description: text('description'),
   status: varchar('status', { length: 50 }).notNull().default('active'),
   userId: uuid('user_id')

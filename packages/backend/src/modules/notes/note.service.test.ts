@@ -1,9 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
-// ---------------------------------------------------------------------------
-// Mock the database module before importing the service
-// ---------------------------------------------------------------------------
-
 const { mockInsert, mockSelect, mockTransaction } = vi.hoisted(() => ({
   mockInsert: vi.fn(),
   mockSelect: vi.fn(),
@@ -19,7 +15,7 @@ vi.mock('../../db/index.js', () => ({
 }));
 
 vi.mock('../../db/schema/index.js', () => ({
-  tasks: { id: 'id', userId: 'user_id', deletedAt: 'deleted_at' },
+  notes: { id: 'id', userId: 'user_id', deletedAt: 'deleted_at', tags: 'tags', searchVector: 'search_vector' },
   activityEvents: {},
 }));
 
@@ -27,30 +23,24 @@ vi.mock('../projects/project.service.js', () => ({
   getProject: vi.fn(),
 }));
 
-import { createTask, deleteTask } from './task.service.js';
+import { createNote, searchNotes, deleteNote } from './note.service.js';
 import { getProject } from '../projects/project.service.js';
-import * as taskRepo from './task.repository.js';
+import * as noteRepo from './note.repository.js';
 
-// ---------------------------------------------------------------------------
-// Tests
-// ---------------------------------------------------------------------------
-
-describe('TaskService', () => {
+describe('NoteService', () => {
   const userId = '550e8400-e29b-41d4-a716-446655440000';
 
   beforeEach(() => {
     vi.clearAllMocks();
   });
 
-  describe('createTask', () => {
-    it('should create a task and return a DTO with the correct shape', async () => {
-      const mockTask = {
+  describe('createNote', () => {
+    it('should create a note and return a DTO with correct shape', async () => {
+      const mockNote = {
         id: '123e4567-e89b-12d3-a456-426614174000',
-        title: 'Test task',
-        description: null,
-        dueDate: null,
-        priority: 'medium',
-        status: 'todo',
+        title: 'Meeting Notes',
+        content: 'Discussed Q1 roadmap',
+        tags: ['meeting', 'roadmap'],
         projectId: null,
         userId,
         createdAt: new Date('2025-01-01T00:00:00Z'),
@@ -58,44 +48,41 @@ describe('TaskService', () => {
         deletedAt: null,
       };
 
-      // The transaction callback receives a `tx` object
       mockTransaction.mockImplementation(async (callback) => {
         const tx = {
           insert: vi.fn().mockReturnValue({
             values: vi.fn().mockReturnValue({
-              returning: vi.fn().mockResolvedValue([mockTask]),
+              returning: vi.fn().mockResolvedValue([mockNote]),
             }),
           }),
         };
         return callback(tx);
       });
 
-      const result = await createTask(userId, {
-        title: 'Test task',
-        priority: 'medium',
-        status: 'todo',
+      const result = await createNote(userId, {
+        title: 'Meeting Notes',
+        content: 'Discussed Q1 roadmap',
+        tags: ['meeting', 'roadmap'],
       });
 
       expect(result).toMatchObject({
-        id: mockTask.id,
-        title: 'Test task',
-        description: null,
-        priority: 'medium',
-        status: 'todo',
+        id: mockNote.id,
+        title: 'Meeting Notes',
+        content: 'Discussed Q1 roadmap',
+        tags: ['meeting', 'roadmap'],
+        projectId: null,
         userId,
       });
       expect(result.createdAt).toBe('2025-01-01T00:00:00.000Z');
       expect(mockTransaction).toHaveBeenCalledOnce();
     });
 
-    it('should call insert twice inside the transaction (task + activity event)', async () => {
-      const mockTask = {
+    it('should execute 2 inserts inside transaction (note + activity event)', async () => {
+      const mockNote = {
         id: '123e4567-e89b-12d3-a456-426614174000',
-        title: 'Activity test',
-        description: null,
-        dueDate: null,
-        priority: 'high',
-        status: 'todo',
+        title: 'Architecture Ideas',
+        content: 'Modular monolith',
+        tags: [],
         projectId: null,
         userId,
         createdAt: new Date(),
@@ -110,7 +97,7 @@ describe('TaskService', () => {
             insertCallCount++;
             return {
               values: vi.fn().mockReturnValue({
-                returning: vi.fn().mockResolvedValue([mockTask]),
+                returning: vi.fn().mockResolvedValue([mockNote]),
               }),
             };
           }),
@@ -118,32 +105,12 @@ describe('TaskService', () => {
         return callback(tx);
       });
 
-      await createTask(userId, {
-        title: 'Activity test',
-        priority: 'high',
-        status: 'todo',
-      });
-
-      // Two inserts: one for the task, one for the activity event
+      await createNote(userId, { title: 'Architecture Ideas' });
       expect(insertCallCount).toBe(2);
     });
 
     it('should validate project ownership when projectId is provided', async () => {
       const projectId = '77777777-7777-7777-7777-777777777777';
-      const mockTask = {
-        id: '123e4567-e89b-12d3-a456-426614174000',
-        title: 'Project task',
-        description: null,
-        dueDate: null,
-        priority: 'medium',
-        status: 'todo',
-        projectId,
-        userId,
-        createdAt: new Date(),
-        updatedAt: new Date(),
-        deletedAt: null,
-      };
-
       vi.mocked(getProject).mockResolvedValue({
         id: projectId,
         name: 'Project Alpha',
@@ -154,19 +121,31 @@ describe('TaskService', () => {
         updatedAt: new Date().toISOString(),
       });
 
+      const mockNote = {
+        id: '123e4567-e89b-12d3-a456-426614174000',
+        title: 'Project Note',
+        content: '',
+        tags: [],
+        projectId,
+        userId,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        deletedAt: null,
+      };
+
       mockTransaction.mockImplementation(async (callback) => {
         const tx = {
           insert: vi.fn().mockReturnValue({
             values: vi.fn().mockReturnValue({
-              returning: vi.fn().mockResolvedValue([mockTask]),
+              returning: vi.fn().mockResolvedValue([mockNote]),
             }),
           }),
         };
         return callback(tx);
       });
 
-      const res = await createTask(userId, {
-        title: 'Project task',
+      const res = await createNote(userId, {
+        title: 'Project Note',
         projectId,
       });
 
@@ -179,31 +158,59 @@ describe('TaskService', () => {
       vi.mocked(getProject).mockRejectedValue(new Error('Project not found'));
 
       await expect(
-        createTask(userId, {
-          title: 'Unauthorized project task',
+        createNote(userId, {
+          title: 'Unauthorized project note',
           projectId: foreignProjectId,
         }),
       ).rejects.toThrow('Project not found');
     });
   });
 
-  describe('deleteTask', () => {
-    it('should soft delete task and emit TASK_DELETED event', async () => {
-      const mockTask = {
+  describe('searchNotes', () => {
+    it('delegates to repository searchNotes', async () => {
+      const mockNotes = [
+        {
+          id: '123e4567-e89b-12d3-a456-426614174000',
+          title: 'Search Result',
+          content: 'Found relevant content here',
+          tags: ['research'],
+          projectId: null,
+          searchVector: null,
+          userId,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+          deletedAt: null,
+        },
+      ];
+
+      vi.spyOn(noteRepo, 'searchNotes').mockResolvedValue({
+        rows: mockNotes,
+        total: 1,
+      });
+
+      const res = await searchNotes(userId, { q: 'relevant', page: 1, limit: 10 });
+      expect(res.data).toHaveLength(1);
+      expect(res.data[0]?.title).toBe('Search Result');
+      expect(res.meta.total).toBe(1);
+    });
+  });
+
+  describe('deleteNote', () => {
+    it('should soft delete note and emit NOTE_DELETED event', async () => {
+      const mockNote = {
         id: '123e4567-e89b-12d3-a456-426614174000',
-        title: 'Delete Task',
-        description: null,
-        dueDate: null,
-        priority: 'medium',
-        status: 'todo',
+        title: 'Delete Note',
+        content: '',
+        tags: [],
         projectId: null,
+        searchVector: null,
         userId,
         createdAt: new Date(),
         updatedAt: new Date(),
         deletedAt: new Date(),
       };
 
-      vi.spyOn(taskRepo, 'softDeleteTask').mockResolvedValue(mockTask);
+      vi.spyOn(noteRepo, 'softDeleteNote').mockResolvedValue(mockNote);
 
       let activityValues: Record<string, unknown> | null = null;
       mockTransaction.mockImplementation(async (callback) => {
@@ -218,12 +225,12 @@ describe('TaskService', () => {
         return callback(tx);
       });
 
-      const result = await deleteTask(userId, mockTask.id);
-      expect(result.id).toBe(mockTask.id);
+      const result = await deleteNote(userId, mockNote.id);
+      expect(result.id).toBe(mockNote.id);
       expect(activityValues).toMatchObject({
-        eventType: 'TASK_DELETED',
-        entityType: 'task',
-        entityId: mockTask.id,
+        eventType: 'NOTE_DELETED',
+        entityType: 'note',
+        entityId: mockNote.id,
       });
     });
   });

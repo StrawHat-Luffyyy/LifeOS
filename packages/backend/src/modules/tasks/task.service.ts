@@ -1,6 +1,7 @@
 import { db } from '../../db/index.js';
 import { activityEvents } from '../../db/schema/index.js';
 import * as taskRepo from './task.repository.js';
+import { getProject } from '../projects/project.service.js';
 import {
   type CreateTaskInput,
   type UpdateTaskInput,
@@ -22,6 +23,10 @@ import {
  * Create a task and log an activity event in the same transaction (FR-TASK-4).
  */
 export async function createTask(userId: string, input: CreateTaskInput): Promise<TaskDto> {
+  if (input.projectId) {
+    await getProject(userId, input.projectId);
+  }
+
   const result = await db.transaction(async (tx) => {
     const task = await taskRepo.insertTask(
       {
@@ -91,6 +96,10 @@ export async function updateTask(
 ): Promise<TaskDto> {
   // Fetch the current task to detect meaningful changes
   const existing = await taskRepo.findTaskByIdOrThrow(taskId, userId);
+
+  if (input.projectId) {
+    await getProject(userId, input.projectId);
+  }
 
   const result = await db.transaction(async (tx) => {
     const updateData: Record<string, unknown> = {};

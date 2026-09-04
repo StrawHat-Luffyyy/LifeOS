@@ -16,6 +16,10 @@ export type Priority = (typeof PRIORITIES)[number];
 export const TASK_STATUSES = ['todo', 'in-progress', 'done', 'cancelled'] as const;
 export type TaskStatus = (typeof TASK_STATUSES)[number];
 
+/** Project lifecycle statuses. */
+export const PROJECT_STATUSES = ['active', 'archived'] as const;
+export type ProjectStatus = (typeof PROJECT_STATUSES)[number];
+
 /** Activity event types (non-exhaustive — extend as new entity types are added). */
 export const EVENT_TYPES = [
   'TASK_CREATED',
@@ -25,8 +29,10 @@ export const EVENT_TYPES = [
   'PROJECT_CREATED',
   'PROJECT_UPDATED',
   'PROJECT_STATUS_CHANGED',
+  'PROJECT_DELETED',
   'NOTE_CREATED',
   'NOTE_UPDATED',
+  'NOTE_DELETED',
   'DOCUMENT_UPLOADED',
   'DOCUMENT_DELETED',
   'AI_CHAT_STARTED',
@@ -100,6 +106,41 @@ export interface TaskDto {
   createdAt: string;
   updatedAt: string;
 }
+
+// ---------------------------------------------------------------------------
+// Domain DTOs — Project
+// ---------------------------------------------------------------------------
+
+/** Shape of a Project as returned by the API. */
+export interface ProjectDto {
+  id: string;
+  name: string;
+  description: string | null;
+  status: ProjectStatus;
+  userId: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+// ---------------------------------------------------------------------------
+// Domain DTOs — Note
+// ---------------------------------------------------------------------------
+
+/** Shape of a Note as returned by the API. */
+export interface NoteDto {
+  id: string;
+  title: string;
+  content: string;
+  tags: string[];
+  projectId: string | null;
+  userId: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+// ---------------------------------------------------------------------------
+// Domain DTOs — Activity
+// ---------------------------------------------------------------------------
 
 /** Shape of an Activity Event as returned by the API. */
 export interface ActivityEventDto {

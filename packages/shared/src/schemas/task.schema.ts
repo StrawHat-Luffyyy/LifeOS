@@ -75,6 +75,6 @@ export const deleteTaskSchema = z.object({
 // Inferred types for use in controllers/services
 // ---------------------------------------------------------------------------
 
-export type CreateTaskInput = z.infer<typeof createTaskSchema>['body'];
-export type UpdateTaskInput = z.infer<typeof updateTaskSchema>['body'];
+export type CreateTaskInput = z.input<typeof createTaskSchema>['body'];
+export type UpdateTaskInput = z.input<typeof updateTaskSchema>['body'];
 export type ListTasksQuery = z.infer<typeof listTasksSchema>['query'];

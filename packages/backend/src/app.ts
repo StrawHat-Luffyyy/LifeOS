@@ -8,6 +8,9 @@ import { errorHandler } from './middleware/error-handler.js';
 import { healthRouter } from './modules/health/health.routes.js';
 import { authRouter } from './modules/auth/auth.routes.js';
 import { taskRouter } from './modules/tasks/task.routes.js';
+import { projectRouter } from './modules/projects/project.routes.js';
+import { noteRouter } from './modules/notes/note.routes.js';
+import { activityRouter } from './modules/activity/activity.routes.js';
 
 /**
  * Express application factory.
@@ -52,6 +55,9 @@ export function createApp(): express.Express {
   app.use('/api/health', healthRouter);
   app.use('/api/auth', authRouter);
   app.use('/api/tasks', taskRouter);
+  app.use('/api/projects', projectRouter);
+  app.use('/api/notes', noteRouter);
+  app.use('/api/activity', activityRouter);
 
   // ---------------------------------------------------------------------------
   // Error handling (must be last)

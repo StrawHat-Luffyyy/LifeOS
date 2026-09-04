@@ -95,7 +95,10 @@ lifeos/
 
 ## Architecture
 
-See [docs/architecture.md](docs/architecture.md) for detailed architecture documentation.
+For comprehensive design and architectural specifications:
+- **System Architecture Overview:** [docs/architecture.md](docs/architecture.md)
+- **High-Level Design (HLD):** [docs/hld.md](docs/hld.md)
+- **Low-Level Design (LLD):** [docs/lld.md](docs/lld.md)
 
 **Key principles & security:**
 - **Memory First** — the system gets more useful as persistent understanding grows

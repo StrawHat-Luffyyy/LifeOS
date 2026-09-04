@@ -15,6 +15,13 @@
       "when": 1788447399913,
       "tag": "0001_cold_fat_cobra",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1788500000000,
+      "tag": "0002_projects_and_notes",
+      "breakpoints": true
     }
   ]
 }

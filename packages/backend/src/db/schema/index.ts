@@ -4,5 +4,6 @@
 export { users } from './users.js';
 export { projects } from './projects.js';
 export { tasks } from './tasks.js';
+export { notes } from './notes.js';
 export { activityEvents } from './activity-events.js';
 export { refreshTokens } from './refresh-tokens.js';
