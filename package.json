@@ -25,7 +25,7 @@
     "clean": "pnpm -r exec rm -rf dist .next node_modules/.cache"
   },
   "engines": {
-    "node": ">=20.0.0",
+    "node": ">=22.13.0",
     "pnpm": ">=9.0.0"
   },
   "devDependencies": {
