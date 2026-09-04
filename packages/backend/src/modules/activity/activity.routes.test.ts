@@ -69,6 +69,70 @@ describe('Activity Routes Integration', () => {
         expect.objectContaining({ page: 1, limit: 20 }),
       );
     });
+
+    it('returns mixed entity types (project, task, note) correctly ordered in the activity feed', async () => {
+      const now = new Date();
+      const mockResponse = {
+        success: true as const,
+        data: [
+          {
+            id: 'event-3',
+            userId,
+            eventType: 'NOTE_CREATED' as const,
+            entityType: 'note' as const,
+            entityId: 'note-1',
+            projectId: 'proj-1',
+            summary: 'Created note: Architecture Specs',
+            metadata: { tags: ['arch'] },
+            createdAt: new Date(now.getTime() - 1000).toISOString(),
+          },
+          {
+            id: 'event-2',
+            userId,
+            eventType: 'TASK_CREATED' as const,
+            entityType: 'task' as const,
+            entityId: 'task-1',
+            projectId: 'proj-1',
+            summary: 'Created task: Implement backend',
+            metadata: null,
+            createdAt: new Date(now.getTime() - 2000).toISOString(),
+          },
+          {
+            id: 'event-1',
+            userId,
+            eventType: 'PROJECT_CREATED' as const,
+            entityType: 'project' as const,
+            entityId: 'proj-1',
+            projectId: 'proj-1',
+            summary: 'Created project: Apollo',
+            metadata: { status: 'active' },
+            createdAt: new Date(now.getTime() - 3000).toISOString(),
+          },
+        ],
+        meta: {
+          page: 1,
+          limit: 20,
+          total: 3,
+          totalPages: 1,
+        },
+      };
+
+      vi.mocked(activityService.listActivity).mockResolvedValue(mockResponse);
+
+      const res = await request(app)
+        .get('/api/activity')
+        .set('Authorization', authHeader);
+
+      expect(res.status).toBe(200);
+      expect(res.body.success).toBe(true);
+      expect(res.body.data).toHaveLength(3);
+      expect(res.body.data.map((e: { entityType: string }) => e.entityType)).toEqual(['note', 'task', 'project']);
+      expect(res.body.data.map((e: { eventType: string }) => e.eventType)).toEqual([
+        'NOTE_CREATED',
+        'TASK_CREATED',
+        'PROJECT_CREATED',
+      ]);
+    });
   });
 
   describe('GET /api/projects/:id/activity', () => {

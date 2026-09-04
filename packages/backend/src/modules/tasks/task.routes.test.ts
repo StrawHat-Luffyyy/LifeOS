@@ -95,6 +95,27 @@ describe('Task Routes Integration', () => {
       expect(res.body.success).toBe(false);
       expect(res.body.error.code).toBe('VALIDATION_ERROR');
     });
+
+    it('returns 404 when task is created with a foreign or non-existent projectId', async () => {
+      const foreignProjectId = '99999999-9999-9999-9999-999999999999';
+      vi.mocked(taskService.createTask).mockRejectedValue(new NotFoundError('Project', foreignProjectId));
+
+      const res = await request(app)
+        .post('/api/tasks')
+        .set('Authorization', authHeader)
+        .send({
+          title: 'Unauthorized Project Task',
+          projectId: foreignProjectId,
+        });
+
+      expect(res.status).toBe(404);
+      expect(res.body.success).toBe(false);
+      expect(res.body.error.code).toBe('NOT_FOUND');
+      expect(taskService.createTask).toHaveBeenCalledWith(
+        userId,
+        expect.objectContaining({ title: 'Unauthorized Project Task', projectId: foreignProjectId }),
+      );
+    });
   });
 
   describe('GET /api/tasks', () => {
