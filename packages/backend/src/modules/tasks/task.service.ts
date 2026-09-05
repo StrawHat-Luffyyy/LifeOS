@@ -22,7 +22,11 @@ import {
 /**
  * Create a task and log an activity event in the same transaction (FR-TASK-4).
  */
-export async function createTask(userId: string, input: CreateTaskInput): Promise<TaskDto> {
+export async function createTask(
+  userId: string,
+  input: CreateTaskInput,
+  context?: { source?: string; conversationId?: string },
+): Promise<TaskDto> {
   if (input.projectId) {
     await getProject(userId, input.projectId);
   }
@@ -48,7 +52,12 @@ export async function createTask(userId: string, input: CreateTaskInput): Promis
       entityId: task.id,
       projectId: task.projectId,
       summary: `Created task: ${task.title}`,
-      metadata: { priority: task.priority, status: task.status },
+      metadata: {
+        priority: task.priority,
+        status: task.status,
+        ...(context?.source ? { source: context.source } : {}),
+        ...(context?.conversationId ? { conversationId: context.conversationId } : {}),
+      },
     });
 
     return task;
@@ -93,6 +102,7 @@ export async function updateTask(
   userId: string,
   taskId: string,
   input: UpdateTaskInput,
+  context?: { source?: string; conversationId?: string },
 ): Promise<TaskDto> {
   // Fetch the current task to detect meaningful changes
   const existing = await taskRepo.findTaskByIdOrThrow(taskId, userId);
@@ -127,7 +137,11 @@ export async function updateTask(
       summary: eventType === 'TASK_COMPLETED'
         ? `Completed task: ${task.title}`
         : `Updated task: ${task.title}`,
-      metadata: { changes: Object.keys(updateData) },
+      metadata: {
+        changes: Object.keys(updateData),
+        ...(context?.source ? { source: context.source } : {}),
+        ...(context?.conversationId ? { conversationId: context.conversationId } : {}),
+      },
     });
 
     return task;

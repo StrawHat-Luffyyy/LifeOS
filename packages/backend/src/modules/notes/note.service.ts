@@ -23,6 +23,7 @@ import {
 export async function createNote(
   userId: string,
   input: CreateNoteInput,
+  context?: { source?: string; conversationId?: string },
 ): Promise<NoteDto> {
   if (input.projectId) {
     await getProject(userId, input.projectId);
@@ -47,7 +48,11 @@ export async function createNote(
       entityId: note.id,
       projectId: note.projectId,
       summary: `Created note: ${note.title}`,
-      metadata: { tags: note.tags },
+      metadata: {
+        tags: note.tags,
+        ...(context?.source ? { source: context.source } : {}),
+        ...(context?.conversationId ? { conversationId: context.conversationId } : {}),
+      },
     });
 
     return note;

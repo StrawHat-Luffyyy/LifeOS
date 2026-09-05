@@ -27,7 +27,8 @@ vi.mock('../projects/project.service.js', () => ({
   getProject: vi.fn(),
 }));
 
-import { createTask, deleteTask } from './task.service.js';
+import { activityEvents } from '../../db/schema/index.js';
+import { createTask, updateTask, deleteTask } from './task.service.js';
 import { getProject } from '../projects/project.service.js';
 import * as taskRepo from './task.repository.js';
 
@@ -184,6 +185,103 @@ describe('TaskService', () => {
           projectId: foreignProjectId,
         }),
       ).rejects.toThrow('Project not found');
+    });
+
+    it('should persist source: "ai" and conversationId in activity event metadata when context is provided', async () => {
+      const mockTask = {
+        id: '123e4567-e89b-12d3-a456-426614174000',
+        title: 'AI created task',
+        description: null,
+        dueDate: null,
+        priority: 'high',
+        status: 'todo',
+        projectId: null,
+        userId,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        deletedAt: null,
+      };
+
+      let activityEventValues: Record<string, unknown> | null = null;
+      mockTransaction.mockImplementation(async (callback) => {
+        const tx = {
+          insert: vi.fn().mockImplementation((table) => {
+            return {
+              values: vi.fn().mockImplementation((vals) => {
+                if (table === activityEvents || !vals.title) {
+                  activityEventValues = vals;
+                }
+                return {
+                  returning: vi.fn().mockResolvedValue([mockTask]),
+                };
+              }),
+            };
+          }),
+        };
+        return callback(tx);
+      });
+
+      await createTask(
+        userId,
+        { title: 'AI created task', priority: 'high', status: 'todo' },
+        { source: 'ai', conversationId: 'conv-test-999' },
+      );
+
+      expect(activityEventValues).not.toBeNull();
+      expect((activityEventValues as any).metadata).toMatchObject({
+        source: 'ai',
+        conversationId: 'conv-test-999',
+        priority: 'high',
+        status: 'todo',
+      });
+    });
+  });
+
+  describe('updateTask', () => {
+    it('should persist source: "ai" and conversationId in activity event metadata when context is provided', async () => {
+      const mockTask = {
+        id: '123e4567-e89b-12d3-a456-426614174000',
+        title: 'Existing Task',
+        description: null,
+        dueDate: null,
+        priority: 'medium',
+        status: 'todo',
+        projectId: null,
+        userId,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        deletedAt: null,
+      };
+
+      vi.spyOn(taskRepo, 'findTaskByIdOrThrow').mockResolvedValue(mockTask);
+      vi.spyOn(taskRepo, 'updateTask').mockResolvedValue({ ...mockTask, status: 'done' });
+
+      let activityEventValues: Record<string, unknown> | null = null;
+      mockTransaction.mockImplementation(async (callback) => {
+        const tx = {
+          insert: vi.fn().mockImplementation(() => ({
+            values: vi.fn().mockImplementation((vals) => {
+              activityEventValues = vals;
+              return { returning: vi.fn().mockResolvedValue([]) };
+            }),
+          })),
+        };
+        return callback(tx);
+      });
+
+      await updateTask(
+        userId,
+        mockTask.id,
+        { status: 'done' },
+        { source: 'ai', conversationId: 'conv-update-888' },
+      );
+
+      expect(activityEventValues).not.toBeNull();
+      expect((activityEventValues as any).metadata).toMatchObject({
+        source: 'ai',
+        conversationId: 'conv-update-888',
+      });
+      expect((activityEventValues as any).eventType).toBe('TASK_COMPLETED');
     });
   });
 

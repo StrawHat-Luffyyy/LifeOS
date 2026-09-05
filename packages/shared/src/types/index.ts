@@ -20,6 +20,18 @@ export type TaskStatus = (typeof TASK_STATUSES)[number];
 export const PROJECT_STATUSES = ['active', 'archived'] as const;
 export type ProjectStatus = (typeof PROJECT_STATUSES)[number];
 
+/** Tool risk tiers (FR-SAFE-1). */
+export const RISK_TIERS = ['READ_ONLY', 'WRITE', 'DESTRUCTIVE', 'EXTERNAL'] as const;
+export type RiskTier = (typeof RISK_TIERS)[number];
+
+/** Message roles in conversations. */
+export const MESSAGE_ROLES = ['user', 'assistant', 'system'] as const;
+export type MessageRole = (typeof MESSAGE_ROLES)[number];
+
+/** Message completion status. */
+export const MESSAGE_STATUSES = ['completed', 'interrupted'] as const;
+export type MessageStatus = (typeof MESSAGE_STATUSES)[number];
+
 /** Activity event types (non-exhaustive — extend as new entity types are added). */
 export const EVENT_TYPES = [
   'TASK_CREATED',
@@ -192,4 +204,76 @@ export interface RefreshTokenDto {
 export interface LogoutDto {
   refreshToken?: string;
 }
+
+// ---------------------------------------------------------------------------
+// AI Chat & Tool DTOs (Phase 2)
+// ---------------------------------------------------------------------------
+
+/** Tool invocation audit record (FR-TOOL-3). */
+export interface ToolCallDto {
+  id: string;
+  conversationId: string;
+  messageId: string | null;
+  toolName: string;
+  riskTier: RiskTier;
+  input: Record<string, unknown>;
+  output: Record<string, unknown>;
+  createdAt: string;
+}
+
+/** Shape of a Message as returned by the API. */
+export interface MessageDto {
+  id: string;
+  conversationId: string;
+  role: MessageRole;
+  content: string;
+  status: MessageStatus;
+  createdAt: string;
+  toolCalls?: ToolCallDto[];
+}
+
+/** Shape of a Conversation as returned by the API. */
+export interface ConversationDto {
+  id: string;
+  userId: string;
+  projectId: string | null;
+  title: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+/** Conversation with its messages included. */
+export interface ConversationWithMessagesDto extends ConversationDto {
+  messages: MessageDto[];
+}
+
+/** Input DTO for creating a conversation. */
+export interface CreateConversationInput {
+  title?: string;
+  projectId?: string;
+}
+
+/** Input DTO for updating a conversation. */
+export interface UpdateConversationInput {
+  title: string;
+}
+
+/** Query params for listing conversations. */
+export interface ListConversationsQuery extends PaginationParams {
+  projectId?: string;
+}
+
+/** Input DTO for sending a message in a conversation. */
+export interface SendMessageInput {
+  content: string;
+}
+
+/** SSE Streaming event shapes (FR-CHAT-2, FR-OBS-1, FR-OBS-2). */
+export type ChatStreamEvent =
+  | { type: 'message_start'; messageId: string }
+  | { type: 'token'; content: string }
+  | { type: 'tool_call_start'; toolName: string; riskTier: RiskTier; input: Record<string, unknown> }
+  | { type: 'tool_call_result'; toolName: string; output: Record<string, unknown> }
+  | { type: 'message_complete'; message: MessageDto }
+  | { type: 'error'; message: string };
 

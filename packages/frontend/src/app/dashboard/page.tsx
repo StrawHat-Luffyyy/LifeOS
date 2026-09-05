@@ -15,6 +15,7 @@ import { ProjectSidebar } from "./components/ProjectSidebar";
 import { TaskList } from "./components/TaskList";
 import { ActivityFeed } from "./components/ActivityFeed";
 import { ProjectView } from "./components/ProjectView";
+import { ChatView } from "./components/ChatView";
 
 export default function DashboardPage() {
   const router = useRouter();
@@ -23,6 +24,7 @@ export default function DashboardPage() {
   const [notes, setNotes] = useState<NoteDto[]>([]);
   const [activity, setActivity] = useState<ActivityEventDto[]>([]);
   const [selectedScope, setSelectedScope] = useState<string>("all");
+  const [chatProjectId, setChatProjectId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
@@ -45,7 +47,7 @@ export default function DashboardPage() {
   const fetchTasks = useCallback(async () => {
     try {
       let endpoint = "/api/tasks";
-      if (selectedScope !== "all" && selectedScope !== "unassigned") {
+      if (selectedScope !== "all" && selectedScope !== "unassigned" && selectedScope !== "chat") {
         endpoint = `/api/tasks?projectId=${selectedScope}`;
       }
       const res = await api.get<TaskDto[]>(endpoint);
@@ -62,7 +64,7 @@ export default function DashboardPage() {
   const fetchNotes = useCallback(async () => {
     try {
       let endpoint = "/api/notes";
-      if (selectedScope !== "all" && selectedScope !== "unassigned") {
+      if (selectedScope !== "all" && selectedScope !== "unassigned" && selectedScope !== "chat") {
         endpoint = `/api/notes?projectId=${selectedScope}`;
       }
       const res = await api.get<NoteDto[]>(endpoint);
@@ -76,7 +78,7 @@ export default function DashboardPage() {
   const fetchActivity = useCallback(async () => {
     try {
       let endpoint = "/api/activity";
-      if (selectedScope !== "all" && selectedScope !== "unassigned") {
+      if (selectedScope !== "all" && selectedScope !== "unassigned" && selectedScope !== "chat") {
         endpoint = `/api/projects/${selectedScope}/activity`;
       }
       const res = await api.get<ActivityEventDto[]>(endpoint);
@@ -96,20 +98,10 @@ export default function DashboardPage() {
       return;
     }
 
-    let taskEndpoint = "/api/tasks";
-    if (selectedScope !== "all" && selectedScope !== "unassigned") {
-      taskEndpoint = `/api/tasks?projectId=${selectedScope}`;
-    }
-
-    let noteEndpoint = "/api/notes";
-    if (selectedScope !== "all" && selectedScope !== "unassigned") {
-      noteEndpoint = `/api/notes?projectId=${selectedScope}`;
-    }
-
-    let activityEndpoint = "/api/activity";
-    if (selectedScope !== "all" && selectedScope !== "unassigned") {
-      activityEndpoint = `/api/projects/${selectedScope}/activity`;
-    }
+    const isProjectScope = selectedScope !== "all" && selectedScope !== "unassigned" && selectedScope !== "chat";
+    const taskEndpoint = isProjectScope ? `/api/tasks?projectId=${selectedScope}` : "/api/tasks";
+    const noteEndpoint = isProjectScope ? `/api/notes?projectId=${selectedScope}` : "/api/notes";
+    const activityEndpoint = isProjectScope ? `/api/projects/${selectedScope}/activity` : "/api/activity";
 
     Promise.allSettled([
       api.get<ProjectDto[]>("/api/projects"),
@@ -291,12 +283,33 @@ export default function DashboardPage() {
             <span className="text-xs text-gray-500 font-mono">v0.4.0</span>
           </div>
 
-          <button
-            onClick={handleLogout}
-            className="text-sm text-gray-400 hover:text-gray-200 transition-colors"
-          >
-            Sign out
-          </button>
+          <div className="flex items-center gap-3">
+            <button
+              data-testid="header-chat-toggle-btn"
+              onClick={() => {
+                if (selectedScope === "chat") {
+                  setSelectedScope("all");
+                } else {
+                  setSelectedScope("chat");
+                }
+              }}
+              className={`flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg border font-medium transition-colors ${
+                selectedScope === "chat"
+                  ? "bg-purple-600/30 text-purple-300 border-purple-500/50 shadow-sm"
+                  : "border-gray-800 bg-gray-900/60 text-gray-300 hover:text-white hover:bg-gray-800"
+              }`}
+            >
+              <span>✨</span>
+              <span>{selectedScope === "chat" ? "Dashboard" : "AI Assistant"}</span>
+            </button>
+
+            <button
+              onClick={handleLogout}
+              className="text-sm text-gray-400 hover:text-gray-200 transition-colors"
+            >
+              Sign out
+            </button>
+          </div>
         </div>
       </header>
 
@@ -324,7 +337,18 @@ export default function DashboardPage() {
             )}
 
             {/* Scope View */}
-            {selectedProject ? (
+            {selectedScope === "chat" ? (
+              <ChatView
+                projects={projects}
+                initialProjectId={chatProjectId}
+                onDataMutated={() => {
+                  fetchTasks();
+                  fetchNotes();
+                  fetchActivity();
+                  fetchProjects();
+                }}
+              />
+            ) : selectedProject ? (
               <ProjectView
                 project={selectedProject}
                 tasks={tasks}
@@ -338,6 +362,10 @@ export default function DashboardPage() {
                 onSearchNotes={handleSearchNotes}
                 onToggleProjectStatus={handleToggleProjectStatus}
                 onDeleteProject={handleDeleteProject}
+                onOpenChat={(projectId) => {
+                  setChatProjectId(projectId);
+                  setSelectedScope("chat");
+                }}
                 loading={loading}
               />
             ) : (

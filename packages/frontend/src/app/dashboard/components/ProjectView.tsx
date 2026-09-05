@@ -25,6 +25,7 @@ interface ProjectViewProps {
   onSearchNotes: (query: string) => Promise<void>;
   onToggleProjectStatus: (project: ProjectDto) => Promise<void>;
   onDeleteProject: (projectId: string) => Promise<void>;
+  onOpenChat?: (projectId: string) => void;
   loading: boolean;
 }
 
@@ -41,6 +42,7 @@ export function ProjectView({
   onSearchNotes,
   onToggleProjectStatus,
   onDeleteProject,
+  onOpenChat,
   loading,
 }: ProjectViewProps) {
   const [activeTab, setActiveTab] = useState<"tasks" | "notes" | "activity">("tasks");
@@ -69,6 +71,15 @@ export function ProjectView({
           </div>
 
           <div className="flex items-center gap-2">
+            {onOpenChat && (
+              <button
+                onClick={() => onOpenChat(project.id)}
+                className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg bg-purple-600/20 hover:bg-purple-600/30 text-purple-300 border border-purple-500/40 font-medium transition-colors"
+                title="Chat with LifeOS AI about this project"
+              >
+                <span>✨</span> Ask Project AI
+              </button>
+            )}
             <button
               onClick={() => onToggleProjectStatus(project)}
               className="text-xs px-3 py-1.5 rounded-lg border border-gray-700 hover:bg-gray-800 text-gray-300 transition-colors"

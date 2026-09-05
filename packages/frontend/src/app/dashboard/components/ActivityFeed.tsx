@@ -51,6 +51,18 @@ export function ActivityFeed({ events, loading }: ActivityFeedProps) {
                   >
                     {badge.label}
                   </span>
+                  {event.metadata?.source === 'ai' && (
+                    <span
+                      data-testid="ai-source-badge"
+                      className="inline-flex items-center gap-1 text-[10px] font-semibold px-1.5 py-0.5 rounded bg-purple-900/40 text-purple-300 border border-purple-700/50"
+                      title="Initiated by LifeOS AI"
+                    >
+                      <svg className="w-2.5 h-2.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                      </svg>
+                      AI
+                    </span>
+                  )}
                   <span className="text-xs text-gray-500">
                     {new Date(event.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} · {new Date(event.createdAt).toLocaleDateString()}
                   </span>
