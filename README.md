@@ -6,7 +6,7 @@ A persistent, context-aware personal operating system that stores structured kno
 
 ## Current Status: Phase 0, Phase 1, Phase 2, & Phase 3 Complete
 
-LifeOS has completed **Phase 0 (Foundation & Hardening)**, **Phase 1 (Productivity Core)**, **Phase 2 (AI Foundation)**, and **Phase 3 (Memory & Knowledge)** with verified multi-tenant isolation, a 144-test automated test suite, live browser recording validation, real live-model Ollama evaluation, and an automated GitHub Actions CI pipeline.
+LifeOS has completed **Phase 0 (Foundation & Hardening)**, **Phase 1 (Productivity Core)**, **Phase 2 (AI Foundation)**, and **Phase 3 (Memory & Knowledge)** with verified multi-tenant isolation, a 148-test automated test suite, live browser recording validation, real live-model Ollama evaluation, and an automated GitHub Actions CI pipeline.
 
 ### What's Implemented & Verified
 
@@ -116,7 +116,7 @@ pnpm dev:frontend  # Next.js app on http://localhost:3000
 # Health check
 curl http://localhost:4000/api/health
 
-# Run automated tests (144 tests across 22 test suites)
+# Run automated tests (148 tests across 22 test suites)
 pnpm test
 
 # Type-check all workspace packages
@@ -164,6 +164,7 @@ All domain routes require `Authorization: Bearer <accessToken>` unless marked pu
 | `GET` | `/api/memories/:id` | Get memory by ID |
 | `DELETE` | `/api/memories/:id` | Soft-delete memory |
 | `POST` | `/api/documents` | Upload document file (multipart: PDF, TXT, MD) |
+| `POST` | `/api/documents/:id/versions` | Re-upload new document version (preserves old chunks) |
 | `GET` | `/api/documents` | List documents (supports `status`, `projectId`) |
 | `GET` | `/api/documents/:id` | Get document metadata & active version |
 | `GET` | `/api/documents/:id/chunks` | Get document chunks & token counts |
