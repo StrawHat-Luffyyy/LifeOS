@@ -186,5 +186,33 @@ describe('Tool Registry (P2-4, A-3, A-4)', () => {
         projectId: undefined,
       });
     });
+
+    it('confirms searchMemory returns only superseding memory B and excludes superseded memory A (V3-4)', async () => {
+      const { hybridRetrievalService } = await import('../retrieval/hybrid-retrieval.service.js');
+      // Memory B is active; Memory A was superseded and therefore excluded from retrieval
+      vi.spyOn(hybridRetrievalService, 'retrieve').mockResolvedValue([
+        {
+          entityType: 'memory' as const,
+          entityId: 'mem-b',
+          title: 'Memory [preference]',
+          content: 'Prefers TypeScript over JavaScript',
+          score: 0.016,
+          metadata: { category: 'preference', sourceType: 'user' },
+        },
+      ]);
+
+      const result = (await TOOL_REGISTRY['searchMemory']!.handler(
+        { query: 'language preferences' },
+        context,
+      )) as { success: boolean; results: Array<{ entityId: string; content: string }> };
+
+      expect(result.success).toBe(true);
+      expect(result.results).toHaveLength(1);
+      expect(result.results[0]?.entityId).toBe('mem-b');
+      expect(result.results[0]?.content).toBe('Prefers TypeScript over JavaScript');
+
+      const returnedIds = result.results.map((r) => r.entityId);
+      expect(returnedIds).not.toContain('mem-a');
+    });
   });
 });

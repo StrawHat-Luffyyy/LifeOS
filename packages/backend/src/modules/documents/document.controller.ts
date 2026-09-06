@@ -30,6 +30,32 @@ export async function upload(
 }
 
 /**
+ * POST /api/documents/:id/versions
+ */
+export async function reupload(
+  req: AuthenticatedRequest,
+  res: Response,
+  next: NextFunction,
+): Promise<void> {
+  try {
+    if (!req.file) {
+      throw new ValidationError('File is required for re-upload');
+    }
+
+    const doc = await docService.reuploadDocument(
+      req.user.sub,
+      req.params['id'] as string,
+      req.file,
+    );
+
+    const response: ApiResponse<DocumentDto> = { success: true, data: doc };
+    res.status(200).json(response);
+  } catch (err) {
+    next(err);
+  }
+}
+
+/**
  * GET /api/documents
  */
 export async function list(

@@ -90,6 +90,76 @@ export async function uploadDocument(
 }
 
 /**
+ * Handle re-uploading an existing document to create a new version without orphaning old chunks (FR-DOC).
+ */
+export async function reuploadDocument(
+  userId: string,
+  documentId: string,
+  file: Express.Multer.File,
+): Promise<DocumentDto> {
+  const doc = await docRepo.findDocumentByIdOrThrow(documentId, userId);
+
+  const ext = file.originalname.split('.').pop()?.toLowerCase() ?? 'txt';
+  const fileType = (['pdf', 'txt', 'md'].includes(ext) ? ext : 'txt') as 'pdf' | 'txt' | 'md';
+
+  const versions = await docRepo.findDocumentVersions(documentId);
+  const nextVersionNumber = versions.length > 0 ? Math.max(...versions.map((v) => v.versionNumber)) + 1 : 1;
+
+  const result = await db.transaction(async (tx) => {
+    const version = await docRepo.insertDocumentVersion(
+      {
+        documentId: doc.id,
+        versionNumber: nextVersionNumber,
+        filePath: file.path,
+        fileSize: file.size,
+      },
+      tx,
+    );
+
+    const updatedDoc = await docRepo.updateDocument(
+      documentId,
+      userId,
+      {
+        fileName: file.originalname,
+        fileType,
+        fileSize: file.size,
+        filePath: file.path,
+        status: 'queued',
+      },
+      tx,
+    );
+
+    await tx.insert(activityEvents).values({
+      userId,
+      eventType: 'DOCUMENT_QUEUED' satisfies EventType,
+      entityType: 'document' satisfies EntityType,
+      entityId: doc.id,
+      projectId: doc.projectId,
+      summary: `Queued document re-upload (version ${nextVersionNumber}): ${doc.title}`,
+      metadata: {
+        fileName: file.originalname,
+        fileType,
+        fileSize: file.size,
+        versionNumber: nextVersionNumber,
+      },
+    });
+
+    return { doc: updatedDoc, version };
+  });
+
+  // Enqueue background processing job
+  await enqueueDocumentIngestion({
+    documentId: result.doc.id,
+    versionId: result.version.id,
+    userId,
+    filePath: file.path,
+    fileType,
+  });
+
+  return toDocumentDto(result.doc);
+}
+
+/**
  * Get document by ID scoped to user.
  */
 export async function getDocument(

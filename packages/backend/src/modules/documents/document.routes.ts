@@ -53,6 +53,12 @@ router.post(
   (req, res, next) => docController.upload(req as AuthenticatedRequest, res, next),
 );
 
+router.post(
+  '/:id/versions',
+  upload.single('file'),
+  (req, res, next) => docController.reupload(req as AuthenticatedRequest, res, next),
+);
+
 router.get(
   '/',
   validate(listDocumentsSchema),

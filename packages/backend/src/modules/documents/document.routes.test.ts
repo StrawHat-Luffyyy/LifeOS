@@ -10,6 +10,7 @@ import { type DocumentDto, type DocumentChunkDto } from '@lifeos/shared';
 // Mock docService
 vi.mock('./document.service.js', () => ({
   uploadDocument: vi.fn(),
+  reuploadDocument: vi.fn(),
   getDocument: vi.fn(),
   listDocuments: vi.fn(),
   deleteDocument: vi.fn(),
@@ -74,6 +75,35 @@ describe('Document Routes Integration (P3-5, FR-DOC)', () => {
       expect(res.status).toBe(400);
       expect(res.body.success).toBe(false);
       expect(res.body.error.code).toBe('VALIDATION_ERROR');
+    });
+  });
+
+  describe('POST /api/documents/:id/versions', () => {
+    it('re-uploads a new version of an existing document and returns 200', async () => {
+      const mockDoc: DocumentDto = {
+        id: '22222222-2222-2222-2222-222222222222',
+        userId,
+        projectId: null,
+        title: 'Project Notes',
+        fileName: 'notes-v2.txt',
+        fileType: 'txt',
+        fileSize: 150,
+        status: 'queued',
+        errorMessage: null,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      };
+
+      vi.mocked(docService.reuploadDocument).mockResolvedValue(mockDoc);
+
+      const res = await request(app)
+        .post('/api/documents/22222222-2222-2222-2222-222222222222/versions')
+        .set('Authorization', authHeader)
+        .attach('file', Buffer.from('Updated document content'), 'notes-v2.txt');
+
+      expect(res.status).toBe(200);
+      expect(res.body.success).toBe(true);
+      expect(res.body.data.fileName).toBe('notes-v2.txt');
     });
   });
 
