@@ -42,6 +42,14 @@ interface ToolCardProps {
 function ToolActivityCard({ tool }: ToolCardProps) {
   const [expanded, setExpanded] = useState(false);
   const badge = getRiskTierBadge(tool.riskTier);
+  const isSearchMemory = tool.toolName === "searchMemory";
+  const searchResults = (tool.output?.results as Array<{
+    entityType: string;
+    title: string;
+    content: string;
+    score: number;
+    metadata?: Record<string, unknown>;
+  }>) || [];
 
   return (
     <div
@@ -54,7 +62,7 @@ function ToolActivityCard({ tool }: ToolCardProps) {
       >
         <div className="flex items-center gap-2">
           <span className="flex h-5 w-5 items-center justify-center rounded-md bg-purple-950/80 text-purple-300 border border-purple-800/60 text-[10px]">
-            ⚡
+            {isSearchMemory ? "🔍" : "⚡"}
           </span>
           <span className="font-mono font-medium text-gray-200">
             Called <span className="text-purple-300">{tool.toolName}</span>
@@ -64,6 +72,11 @@ function ToolActivityCard({ tool }: ToolCardProps) {
           >
             {badge.label}
           </span>
+          {isSearchMemory && Boolean(tool.input?.query) && (
+            <span className="text-gray-400 truncate max-w-xs text-[11px]">
+              &quot;{String(tool.input?.query)}&quot;
+            </span>
+          )}
         </div>
         <div className="flex items-center gap-1 text-gray-500 hover:text-gray-300">
           <span>{expanded ? "Hide details" : "Show details"}</span>
@@ -79,19 +92,61 @@ function ToolActivityCard({ tool }: ToolCardProps) {
       </div>
 
       {expanded && (
-        <div className="border-t border-gray-800/80 bg-gray-950/60 p-3 space-y-2">
-          <div>
-            <div className="text-[10px] font-semibold uppercase text-gray-500 mb-1">Inputs:</div>
-            <pre className="font-mono text-[11px] text-gray-300 bg-gray-900/80 p-2 rounded-lg border border-gray-800 overflow-x-auto">
-              {JSON.stringify(tool.input, null, 2)}
-            </pre>
-          </div>
-          <div>
-            <div className="text-[10px] font-semibold uppercase text-gray-500 mb-1">Result:</div>
-            <pre className="font-mono text-[11px] text-emerald-400/90 bg-gray-900/80 p-2 rounded-lg border border-gray-800 overflow-x-auto">
-              {JSON.stringify(tool.output, null, 2)}
-            </pre>
-          </div>
+        <div className="border-t border-gray-800/80 bg-gray-950/60 p-3 space-y-3">
+          {isSearchMemory && searchResults.length > 0 ? (
+            <div className="space-y-2">
+              <div className="text-[10px] font-semibold uppercase text-purple-400 flex items-center justify-between">
+                <span>Retrieved Knowledge Evidence ({searchResults.length} matches):</span>
+                <span className="font-mono text-[9px] text-gray-500">Hybrid RRF Fusion (k=60)</span>
+              </div>
+              <div className="space-y-2">
+                {searchResults.map((res, idx) => {
+                  let typeColor = "bg-blue-950/80 text-blue-400 border-blue-800/50";
+                  if (res.entityType === "document") typeColor = "bg-purple-950/80 text-purple-400 border-purple-800/50";
+                  if (res.entityType === "memory") typeColor = "bg-emerald-950/80 text-emerald-400 border-emerald-800/50";
+
+                  return (
+                    <div
+                      key={idx}
+                      className="p-2.5 rounded-lg border border-gray-800 bg-gray-900/70 text-xs space-y-1"
+                    >
+                      <div className="flex items-center justify-between text-[10px]">
+                        <div className="flex items-center gap-2">
+                          <span
+                            className={`uppercase text-[9px] font-bold px-1.5 py-0.5 rounded border ${typeColor}`}
+                          >
+                            {res.entityType}
+                          </span>
+                          <span className="font-semibold text-gray-200">{res.title}</span>
+                        </div>
+                        <span className="font-mono text-gray-500">
+                          RRF {(res.score * 1000).toFixed(1)}
+                        </span>
+                      </div>
+                      <p className="text-gray-300 font-mono text-[11px] leading-relaxed line-clamp-3">
+                        {res.content}
+                      </p>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          ) : (
+            <>
+              <div>
+                <div className="text-[10px] font-semibold uppercase text-gray-500 mb-1">Inputs:</div>
+                <pre className="font-mono text-[11px] text-gray-300 bg-gray-900/80 p-2 rounded-lg border border-gray-800 overflow-x-auto">
+                  {JSON.stringify(tool.input, null, 2)}
+                </pre>
+              </div>
+              <div>
+                <div className="text-[10px] font-semibold uppercase text-gray-500 mb-1">Result:</div>
+                <pre className="font-mono text-[11px] text-emerald-400/90 bg-gray-900/80 p-2 rounded-lg border border-gray-800 overflow-x-auto">
+                  {JSON.stringify(tool.output, null, 2)}
+                </pre>
+              </div>
+            </>
+          )}
         </div>
       )}
     </div>
@@ -288,6 +343,7 @@ export function ChatView({ projects, initialProjectId, onDataMutated }: ChatView
       const decoder = new TextDecoder("utf-8");
       let buffer = "";
       const turnToolCalls: ToolCallDto[] = [];
+      let currentPendingTool: { toolName: string; riskTier: RiskTier; input: Record<string, unknown> } | null = null;
 
       while (true) {
         const { done, value } = await reader.read();
@@ -319,6 +375,11 @@ export function ChatView({ projects, initialProjectId, onDataMutated }: ChatView
             if (parsed.type === "token") {
               setStreamingText((prev) => prev + parsed.content);
             } else if (parsed.type === "tool_call_start") {
+              currentPendingTool = {
+                toolName: parsed.toolName,
+                riskTier: parsed.riskTier,
+                input: parsed.input,
+              };
               setPendingToolName(parsed.toolName);
             } else if (parsed.type === "tool_call_result") {
               setPendingToolName(null);
@@ -327,8 +388,8 @@ export function ChatView({ projects, initialProjectId, onDataMutated }: ChatView
                 conversationId: targetConvId!,
                 messageId: null,
                 toolName: parsed.toolName,
-                riskTier: "WRITE",
-                input: {},
+                riskTier: currentPendingTool?.riskTier ?? "READ_ONLY",
+                input: currentPendingTool?.input ?? {},
                 output: parsed.output,
                 createdAt: new Date().toISOString(),
               };

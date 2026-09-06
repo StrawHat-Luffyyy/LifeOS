@@ -137,6 +137,34 @@ class ApiClient {
     return this.request<T>(path, { method: 'DELETE' });
   }
 
+  async postForm<T>(path: string, formData: FormData): Promise<ApiResponse<T>> {
+    const token = getToken();
+    const headers: Record<string, string> = {};
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
+    }
+
+    const response = await fetch(`${this.baseUrl}${path}`, {
+      method: 'POST',
+      headers,
+      body: formData,
+    });
+
+    const body = await response.json();
+
+    if (!response.ok) {
+      const errorBody = body as ApiErrorResponse;
+      throw new ApiError(
+        errorBody.error?.message || 'An error occurred',
+        errorBody.error?.code || 'UNKNOWN_ERROR',
+        response.status,
+        errorBody.error?.details,
+      );
+    }
+
+    return body as ApiResponse<T>;
+  }
+
   async logout(): Promise<void> {
     const refreshToken = getRefreshToken();
     if (refreshToken) {

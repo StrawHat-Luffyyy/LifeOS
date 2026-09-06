@@ -87,6 +87,19 @@ export function ProjectSidebar({
             <span className="flex h-4 w-4 items-center justify-center text-purple-400 text-xs">✨</span>
             <span>AI Assistant</span>
           </button>
+
+          <button
+            data-testid="sidebar-knowledge-btn"
+            onClick={() => onSelectScope("knowledge")}
+            className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors text-left ${
+              selectedScope === "knowledge"
+                ? "bg-purple-600/20 text-purple-300 border border-purple-500/40"
+                : "text-gray-300 hover:bg-gray-800/60 hover:text-purple-300"
+            }`}
+          >
+            <span className="flex h-4 w-4 items-center justify-center text-purple-400 text-xs">🧠</span>
+            <span>Memory & Docs</span>
+          </button>
         </div>
       </div>
 

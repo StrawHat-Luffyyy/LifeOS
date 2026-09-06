@@ -16,6 +16,8 @@ import { TaskList } from "./components/TaskList";
 import { ActivityFeed } from "./components/ActivityFeed";
 import { ProjectView } from "./components/ProjectView";
 import { ChatView } from "./components/ChatView";
+import { MemoryView } from "./components/MemoryView";
+import { DocumentManagerView } from "./components/DocumentManagerView";
 
 export default function DashboardPage() {
   const router = useRouter();
@@ -29,6 +31,7 @@ export default function DashboardPage() {
   const [error, setError] = useState("");
 
   const [globalTab, setGlobalTab] = useState<"tasks" | "activity">("tasks");
+  const [knowledgeTab, setKnowledgeTab] = useState<"memories" | "documents">("memories");
 
   // ---------------------------------------------------------------------------
   // Data Fetching
@@ -44,10 +47,13 @@ export default function DashboardPage() {
     }
   }, []);
 
+  const isCustomView = selectedScope === "all" || selectedScope === "unassigned" || selectedScope === "chat" || selectedScope === "knowledge";
+  const isProjectScope = !isCustomView;
+
   const fetchTasks = useCallback(async () => {
     try {
       let endpoint = "/api/tasks";
-      if (selectedScope !== "all" && selectedScope !== "unassigned" && selectedScope !== "chat") {
+      if (selectedScope !== "all" && selectedScope !== "unassigned" && selectedScope !== "chat" && selectedScope !== "knowledge") {
         endpoint = `/api/tasks?projectId=${selectedScope}`;
       }
       const res = await api.get<TaskDto[]>(endpoint);
@@ -64,7 +70,7 @@ export default function DashboardPage() {
   const fetchNotes = useCallback(async () => {
     try {
       let endpoint = "/api/notes";
-      if (selectedScope !== "all" && selectedScope !== "unassigned" && selectedScope !== "chat") {
+      if (selectedScope !== "all" && selectedScope !== "unassigned" && selectedScope !== "chat" && selectedScope !== "knowledge") {
         endpoint = `/api/notes?projectId=${selectedScope}`;
       }
       const res = await api.get<NoteDto[]>(endpoint);
@@ -78,7 +84,7 @@ export default function DashboardPage() {
   const fetchActivity = useCallback(async () => {
     try {
       let endpoint = "/api/activity";
-      if (selectedScope !== "all" && selectedScope !== "unassigned" && selectedScope !== "chat") {
+      if (selectedScope !== "all" && selectedScope !== "unassigned" && selectedScope !== "chat" && selectedScope !== "knowledge") {
         endpoint = `/api/projects/${selectedScope}/activity`;
       }
       const res = await api.get<ActivityEventDto[]>(endpoint);
@@ -98,7 +104,6 @@ export default function DashboardPage() {
       return;
     }
 
-    const isProjectScope = selectedScope !== "all" && selectedScope !== "unassigned" && selectedScope !== "chat";
     const taskEndpoint = isProjectScope ? `/api/tasks?projectId=${selectedScope}` : "/api/tasks";
     const noteEndpoint = isProjectScope ? `/api/notes?projectId=${selectedScope}` : "/api/notes";
     const activityEndpoint = isProjectScope ? `/api/projects/${selectedScope}/activity` : "/api/activity";
@@ -152,7 +157,7 @@ export default function DashboardPage() {
     return () => {
       ignore = true;
     };
-  }, [router, selectedScope]);
+  }, [router, selectedScope, isProjectScope]);
 
   // ---------------------------------------------------------------------------
   // Action Handlers
@@ -348,6 +353,59 @@ export default function DashboardPage() {
                   fetchProjects();
                 }}
               />
+            ) : selectedScope === "knowledge" ? (
+              <div className="space-y-6">
+                <div className="flex items-center justify-between border-b border-gray-800 pb-4">
+                  <div>
+                    <h2 className="text-2xl font-bold text-gray-100 flex items-center gap-2.5">
+                      <span>🧠</span> Memory & Knowledge Bank
+                    </h2>
+                    <p className="text-sm text-gray-400 mt-1">
+                      Manage explicit facts, preferences, goals, and uploaded documents for AI RAG retrieval.
+                    </p>
+                  </div>
+
+                  <div className="flex rounded-lg border border-gray-800 bg-gray-900 p-1">
+                    <button
+                      onClick={() => setKnowledgeTab("memories")}
+                      data-testid="tab-memories"
+                      className={`text-xs px-3 py-1.5 rounded font-medium transition-colors ${
+                        knowledgeTab === "memories"
+                          ? "bg-purple-600 text-white shadow-sm"
+                          : "text-gray-400 hover:text-white"
+                      }`}
+                    >
+                      Explicit Memories
+                    </button>
+                    <button
+                      onClick={() => setKnowledgeTab("documents")}
+                      data-testid="tab-documents"
+                      className={`text-xs px-3 py-1.5 rounded font-medium transition-colors ${
+                        knowledgeTab === "documents"
+                          ? "bg-purple-600 text-white shadow-sm"
+                          : "text-gray-400 hover:text-white"
+                      }`}
+                    >
+                      Documents
+                    </button>
+                  </div>
+                </div>
+
+                {knowledgeTab === "memories" ? (
+                  <MemoryView
+                    onDataMutated={() => {
+                      fetchActivity();
+                    }}
+                  />
+                ) : (
+                  <DocumentManagerView
+                    projects={projects}
+                    onDataMutated={() => {
+                      fetchActivity();
+                    }}
+                  />
+                )}
+              </div>
             ) : selectedProject ? (
               <ProjectView
                 project={selectedProject}

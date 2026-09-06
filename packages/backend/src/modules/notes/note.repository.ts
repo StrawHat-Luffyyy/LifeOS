@@ -142,6 +142,112 @@ export async function searchNotes(
 }
 
 /**
+ * Vector similarity search across notes using cosine distance (<=>).
+ * Returns rows ordered by closest cosine distance.
+ */
+export async function searchNotesVector(
+  userId: string,
+  queryEmbedding: number[],
+  activeModel: string,
+  limit: number = 20,
+  projectId?: string,
+): Promise<{ row: NoteRow; distance: number }[]> {
+  const conditions: SQL[] = [
+    eq(notes.userId, userId),
+    isNull(notes.deletedAt),
+    eq(notes.embeddingModel, activeModel),
+    sql`${notes.embedding} IS NOT NULL`,
+  ];
+
+  if (projectId) {
+    conditions.push(eq(notes.projectId, projectId));
+  }
+
+  const distanceSql = sql<number>`${notes.embedding} <=> ${JSON.stringify(queryEmbedding)}::vector`;
+
+  const results = await db
+    .select({
+      note: notes,
+      distance: distanceSql,
+    })
+    .from(notes)
+    .where(and(...conditions)!)
+    .orderBy(asc(distanceSql))
+    .limit(limit);
+
+  return results.map((r) => ({ row: r.note, distance: Number(r.distance) }));
+}
+
+/**
+ * Hybrid search combining FTS keyword search and vector cosine similarity via Reciprocal Rank Fusion (k=60).
+ */
+export async function searchNotesHybrid(
+  userId: string,
+  query: string,
+  queryEmbedding: number[],
+  activeModel: string,
+  options: { page?: number; limit?: number; projectId?: string } = {},
+): Promise<{ rows: NoteRow[]; total: number; scores: Map<string, number> }> {
+  const limit = options.limit ?? 20;
+  const page = options.page ?? 1;
+
+  // 1. Fetch top FTS candidates
+  const ftsConditions: SQL[] = [
+    eq(notes.userId, userId),
+    isNull(notes.deletedAt),
+    sql`${notes.searchVector} @@ plainto_tsquery('english', ${query})`,
+  ];
+  if (options.projectId) {
+    ftsConditions.push(eq(notes.projectId, options.projectId));
+  }
+  const ftsRankSql = sql`ts_rank(${notes.searchVector}, plainto_tsquery('english', ${query}))`;
+  const ftsResults = await db
+    .select()
+    .from(notes)
+    .where(and(...ftsConditions)!)
+    .orderBy(desc(ftsRankSql))
+    .limit(limit * 2);
+
+  // 2. Fetch top Vector candidates
+  const vectorResults = await searchNotesVector(
+    userId,
+    queryEmbedding,
+    activeModel,
+    limit * 2,
+    options.projectId,
+  );
+
+  // 3. Reciprocal Rank Fusion (k = 60)
+  const k = 60;
+  const scoreMap = new Map<string, number>();
+  const rowMap = new Map<string, NoteRow>();
+
+  ftsResults.forEach((row, rank) => {
+    rowMap.set(row.id, row);
+    const score = 1 / (k + rank + 1);
+    scoreMap.set(row.id, (scoreMap.get(row.id) ?? 0) + score);
+  });
+
+  vectorResults.forEach(({ row }, rank) => {
+    rowMap.set(row.id, row);
+    const score = 1 / (k + rank + 1);
+    scoreMap.set(row.id, (scoreMap.get(row.id) ?? 0) + score);
+  });
+
+  // Sort all unique items by fused RRF score descending
+  const sortedIds = Array.from(scoreMap.keys()).sort(
+    (a, b) => (scoreMap.get(b) ?? 0) - (scoreMap.get(a) ?? 0),
+  );
+
+  const total = sortedIds.length;
+  const offset = (page - 1) * limit;
+  const pagedIds = sortedIds.slice(offset, offset + limit);
+  const rows = pagedIds.map((id) => rowMap.get(id)!);
+
+  return { rows, total, scores: scoreMap };
+}
+
+/**
  * Update a note row.
  */
 export async function updateNote(

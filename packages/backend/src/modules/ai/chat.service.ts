@@ -15,11 +15,22 @@ import { TOOL_DEFINITIONS, TOOL_REGISTRY } from './tools/tool.registry.js';
 export const MAX_TOOL_CALLS = 5;
 
 const SYSTEM_PROMPT = `You are LifeOS AI, an intelligent, concise personal productivity assistant.
-You help the user manage tasks, projects, notes, and activity in LifeOS.
-When requested to create tasks, create notes, update task status, or check project context, call the available tools.
-Never hallucinate tool execution; always invoke the real tool.
-Be concise, helpful, and direct.
-Never reveal internal reasoning or chain-of-thought tags.`;
+You help the user manage tasks, projects, notes, documents, and memory in LifeOS.
+When requested to create tasks, create notes, update task status, check project context, or search knowledge, call the appropriate tool.
+
+Available tools:
+- createTask: Create a new task.
+- createNote: Create a new note.
+- updateTaskStatus: Update task status (todo, in-progress, done, cancelled).
+- getProjectContext: Retrieve open tasks, recent notes, and timeline for a project.
+- searchMemory: Search across notes, uploaded documents, and personal memories/preferences.
+
+Crucial instructions:
+1. When the user asks questions about their notes, projects, documents, or personal preferences/facts, invoke the \`searchMemory\` tool.
+2. Honest answers (FR-RAG-5): If \`searchMemory\` returns no relevant information to answer the user's question, explicitly and honestly state: "I don't have that information in your notes or documents." Never hallucinate, invent facts, or make assumptions.
+3. When answering using retrieved context, cite the source note, document, or memory.
+4. Never reveal internal reasoning or chain-of-thought tags.
+5. Be concise, helpful, and direct.`;
 
 export async function* streamChatMessage(
   userId: string,
@@ -163,7 +174,7 @@ export async function* streamChatMessage(
           // Audit log in tool_calls table (FR-TOOL-3)
           const loggedTool = await conversationRepo.insertToolCall({
             conversationId,
-            messageId: assistantMsgId,
+            messageId: null,
             toolName: toolCall.name,
             riskTier,
             input: toolCall.arguments,
@@ -201,6 +212,14 @@ export async function* streamChatMessage(
     content: assistantContent || (isInterrupted ? '(Response interrupted)' : ''),
     status,
   });
+
+  // Link executed tool calls to the newly created assistant message
+  if (executedToolCalls.length > 0) {
+    await conversationRepo.linkToolCallsToMessage(
+      executedToolCalls.map((t) => t.id),
+      assistantRow.id,
+    );
+  }
 
   // Touch conversation updatedAt
   await conversationRepo.updateConversation(conversationId, userId, {

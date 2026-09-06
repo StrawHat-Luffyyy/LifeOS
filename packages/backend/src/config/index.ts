@@ -14,10 +14,13 @@ const envSchema = z.object({
   PORT: z.coerce.number().default(4000),
   FRONTEND_URL: z.string().default('http://localhost:3000'),
   LOG_LEVEL: z.enum(['debug', 'info', 'warn', 'error']).default('info'),
-  OLLAMA_BASE_URL: z.string().default('http://localhost:11434'),
+  OLLAMA_BASE_URL: z.string().default('http://127.0.0.1:11434'),
   OLLAMA_MODEL: z.string().default('qwen3:8b'),
+  OLLAMA_EMBED_MODEL: z.string().default('nomic-embed-text'),
   LLM_TEMPERATURE: z.coerce.number().default(0.15),
   LLM_PROVIDER: z.enum(['ollama', 'mock']).default('ollama'),
+  EMBEDDING_PROVIDER: z.enum(['ollama', 'mock']).default('ollama'),
+  UPLOAD_DIR: z.string().default('data/uploads'),
 });
 
 const parsed = envSchema.safeParse(process.env);

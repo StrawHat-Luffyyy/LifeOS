@@ -4,6 +4,7 @@ import * as taskService from '../../tasks/task.service.js';
 import * as noteService from '../../notes/note.service.js';
 import * as projectService from '../../projects/project.service.js';
 import * as activityService from '../../activity/activity.service.js';
+import { hybridRetrievalService } from '../retrieval/hybrid-retrieval.service.js';
 
 export interface ToolExecutionContext {
   userId: string;
@@ -102,11 +103,39 @@ export const getProjectContextToolDef: ToolDefinition = {
   },
 };
 
+export const searchMemoryToolDef: ToolDefinition = {
+  type: 'function',
+  function: {
+    name: 'searchMemory',
+    description:
+      'Search across user notes, uploaded documents, and personal memories/preferences using semantic and keyword search.',
+    parameters: {
+      type: 'object',
+      properties: {
+        query: {
+          type: 'string',
+          description: 'Search query describing what information or context you need.',
+        },
+        limit: {
+          type: 'number',
+          description: 'Maximum number of items to retrieve (default: 5).',
+        },
+        projectId: {
+          type: 'string',
+          description: 'Optional UUID to limit search to a specific project.',
+        },
+      },
+      required: ['query'],
+    },
+  },
+};
+
 export const TOOL_DEFINITIONS: ToolDefinition[] = [
   createTaskToolDef,
   createNoteToolDef,
   updateTaskStatusToolDef,
   getProjectContextToolDef,
+  searchMemoryToolDef,
 ];
 
 export const TOOL_REGISTRY: Record<string, RegisteredTool> = {
@@ -210,6 +239,29 @@ export const TOOL_REGISTRY: Record<string, RegisteredTool> = {
         openTasks: openTasks.map((t) => ({ id: t.id, title: t.title, priority: t.priority, status: t.status })),
         recentNotes: notesRes.data.map((n) => ({ id: n.id, title: n.title, tags: n.tags })),
         recentActivity: activityRes.data.map((a) => ({ id: a.id, summary: a.summary, createdAt: a.createdAt })),
+      };
+    },
+  },
+  searchMemory: {
+    name: 'searchMemory',
+    riskTier: 'READ_ONLY',
+    definition: searchMemoryToolDef,
+    handler: async (args, context) => {
+      const query = String(args['query']);
+      const limit = typeof args['limit'] === 'number' ? args['limit'] : 5;
+      const projectId = args['projectId'] ? String(args['projectId']) : undefined;
+
+      const results = await hybridRetrievalService.retrieve({
+        userId: context.userId,
+        query,
+        limit,
+        projectId,
+      });
+
+      return {
+        success: true,
+        count: results.length,
+        results,
       };
     },
   },

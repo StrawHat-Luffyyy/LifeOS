@@ -10,3 +10,5 @@ export { refreshTokens } from './refresh-tokens.js';
 export { conversations } from './conversations.js';
 export { messages } from './messages.js';
 export { toolCalls } from './tool-calls.js';
+export { memories } from './memories.js';
+export { documents, documentVersions, documentChunks } from './documents.js';

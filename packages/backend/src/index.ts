@@ -1,12 +1,16 @@
 import { config } from './config/index.js';
 import { createApp } from './app.js';
 import { closeDb } from './db/index.js';
+import { startDocumentWorker, stopDocumentWorker } from './modules/documents/document.worker.js';
 
 const app = createApp();
 
 const server = app.listen(config.PORT, () => {
   // eslint-disable-next-line no-console
   console.log(`LifeOS backend running on port ${config.PORT} [${config.NODE_ENV}]`);
+  if (config.NODE_ENV !== 'test') {
+    startDocumentWorker();
+  }
 });
 
 // ---------------------------------------------------------------------------
@@ -16,6 +20,8 @@ const server = app.listen(config.PORT, () => {
 async function shutdown(signal: string): Promise<void> {
   // eslint-disable-next-line no-console
   console.log(`\n${signal} received — shutting down gracefully...`);
+
+  await stopDocumentWorker();
 
   server.close(async () => {
     await closeDb();
@@ -33,3 +39,4 @@ async function shutdown(signal: string): Promise<void> {
 
 process.on('SIGTERM', () => shutdown('SIGTERM'));
 process.on('SIGINT', () => shutdown('SIGINT'));
+

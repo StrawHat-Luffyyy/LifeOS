@@ -46,7 +46,15 @@ export const EVENT_TYPES = [
   'NOTE_UPDATED',
   'NOTE_DELETED',
   'DOCUMENT_UPLOADED',
+  'DOCUMENT_QUEUED',
+  'DOCUMENT_PROCESSED',
+  'DOCUMENT_INGESTED',
+  'DOCUMENT_FAILED',
   'DOCUMENT_DELETED',
+  'MEMORY_CREATED',
+  'MEMORY_UPDATED',
+  'MEMORY_SUPERSEDED',
+  'MEMORY_DELETED',
   'AI_CHAT_STARTED',
   'AI_TOOL_CALLED',
   'AGENT_EXECUTED',
@@ -54,7 +62,7 @@ export const EVENT_TYPES = [
 export type EventType = (typeof EVENT_TYPES)[number];
 
 /** Entity types that activity events can reference. */
-export const ENTITY_TYPES = ['task', 'project', 'note', 'document', 'conversation'] as const;
+export const ENTITY_TYPES = ['task', 'project', 'note', 'document', 'conversation', 'memory'] as const;
 export type EntityType = (typeof ENTITY_TYPES)[number];
 
 // ---------------------------------------------------------------------------
@@ -276,4 +284,97 @@ export type ChatStreamEvent =
   | { type: 'tool_call_result'; toolName: string; output: Record<string, unknown> }
   | { type: 'message_complete'; message: MessageDto }
   | { type: 'error'; message: string };
+
+// ---------------------------------------------------------------------------
+// Memory DTOs (Phase 3 - FR-MEM)
+// ---------------------------------------------------------------------------
+
+/** Memory categories (FR-MEM-1). */
+export const MEMORY_CATEGORIES = ['fact', 'decision', 'preference', 'goal'] as const;
+export type MemoryCategory = (typeof MEMORY_CATEGORIES)[number];
+
+/** Memory source types for provenance (FR-MEM-2). */
+export const MEMORY_SOURCE_TYPES = ['chat', 'user', 'document', 'note'] as const;
+export type MemorySourceType = (typeof MEMORY_SOURCE_TYPES)[number];
+
+export interface MemoryDto {
+  id: string;
+  userId: string;
+  category: MemoryCategory;
+  content: string;
+  sourceType: MemorySourceType;
+  sourceId: string | null;
+  supersededBy: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+// ---------------------------------------------------------------------------
+// Document Ingestion DTOs (Phase 3 - FR-DOC)
+// ---------------------------------------------------------------------------
+
+export const DOCUMENT_STATUSES = ['queued', 'processing', 'ready', 'failed'] as const;
+export type DocumentStatus = (typeof DOCUMENT_STATUSES)[number];
+
+export const DOCUMENT_FILE_TYPES = ['pdf', 'txt', 'md'] as const;
+export type DocumentFileType = (typeof DOCUMENT_FILE_TYPES)[number];
+
+export interface DocumentDto {
+  id: string;
+  userId: string;
+  projectId: string | null;
+  title: string;
+  fileName: string;
+  fileType: DocumentFileType;
+  fileSize: number;
+  status: DocumentStatus;
+  errorMessage: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface DocumentVersionDto {
+  id: string;
+  documentId: string;
+  versionNumber: number;
+  filePath: string;
+  fileSize: number;
+  createdAt: string;
+}
+
+export interface DocumentChunkDto {
+  id: string;
+  documentVersionId: string;
+  documentId: string;
+  userId: string;
+  projectId: string | null;
+  content: string;
+  chunkIndex: number;
+  createdAt: string;
+}
+
+// ---------------------------------------------------------------------------
+// Unified RAG & Retrieval DTOs (Phase 3 - FR-RAG)
+// ---------------------------------------------------------------------------
+
+export type RetrievalEntityType = 'note' | 'document' | 'memory';
+
+export interface RetrievalResultDto {
+  entityType: RetrievalEntityType;
+  entityId: string;
+  title: string;
+  content: string;
+  snippet?: string;
+  score: number;
+  projectId?: string | null;
+  metadata?: Record<string, unknown>;
+}
+
+export interface SearchMemoryInput {
+  query: string;
+  category?: MemoryCategory;
+  projectId?: string;
+  limit?: number;
+}
+
 

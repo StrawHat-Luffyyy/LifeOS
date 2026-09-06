@@ -20,19 +20,21 @@ describe('Tool Registry (P2-4, A-3, A-4)', () => {
     vi.clearAllMocks();
   });
 
-  it('should expose strictly 4 tools and correct risk tiers', () => {
-    expect(TOOL_DEFINITIONS).toHaveLength(4);
+  it('should expose strictly 5 tools and correct risk tiers (P3-6)', () => {
+    expect(TOOL_DEFINITIONS).toHaveLength(5);
     expect(Object.keys(TOOL_REGISTRY)).toEqual([
       'createTask',
       'createNote',
       'updateTaskStatus',
       'getProjectContext',
+      'searchMemory',
     ]);
 
     expect(TOOL_REGISTRY['createTask']?.riskTier).toBe('WRITE');
     expect(TOOL_REGISTRY['createNote']?.riskTier).toBe('WRITE');
     expect(TOOL_REGISTRY['updateTaskStatus']?.riskTier).toBe('WRITE');
     expect(TOOL_REGISTRY['getProjectContext']?.riskTier).toBe('READ_ONLY');
+    expect(TOOL_REGISTRY['searchMemory']?.riskTier).toBe('READ_ONLY');
   });
 
   describe('createTask', () => {
@@ -148,6 +150,41 @@ describe('Tool Registry (P2-4, A-3, A-4)', () => {
       expect(projectService.getProject).toHaveBeenCalledWith(userId, foreignProjectId);
       // Ensures no downstream service calls were made
       expect(taskService.listTasks).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('searchMemory (P3-6, OD-1, FR-RAG)', () => {
+    it('should invoke hybridRetrievalService.retrieve and return results', async () => {
+      const mockResults = [
+        {
+          entityType: 'note' as const,
+          entityId: 'note-1',
+          title: 'Architecture Overview',
+          content: 'Postgres and Redis are used in LifeOS',
+          score: 0.016,
+          metadata: {},
+        },
+      ];
+
+      const { hybridRetrievalService } = await import('../retrieval/hybrid-retrieval.service.js');
+      vi.spyOn(hybridRetrievalService, 'retrieve').mockResolvedValue(mockResults);
+
+      const result = await TOOL_REGISTRY['searchMemory']!.handler(
+        { query: 'system architecture' },
+        context,
+      );
+
+      expect(result).toEqual({
+        success: true,
+        count: 1,
+        results: mockResults,
+      });
+      expect(hybridRetrievalService.retrieve).toHaveBeenCalledWith({
+        userId,
+        query: 'system architecture',
+        limit: 5,
+        projectId: undefined,
+      });
     });
   });
 });

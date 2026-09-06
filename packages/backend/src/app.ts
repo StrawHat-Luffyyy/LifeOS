@@ -12,6 +12,8 @@ import { projectRouter } from './modules/projects/project.routes.js';
 import { noteRouter } from './modules/notes/note.routes.js';
 import { activityRouter } from './modules/activity/activity.routes.js';
 import { conversationRouter } from './modules/ai/conversation.routes.js';
+import { memoryRouter } from './modules/memory/memory.routes.js';
+import { documentRouter } from './modules/documents/document.routes.js';
 
 /**
  * Express application factory.
@@ -60,6 +62,8 @@ export function createApp(): express.Express {
   app.use('/api/notes', noteRouter);
   app.use('/api/activity', activityRouter);
   app.use('/api/conversations', conversationRouter);
+  app.use('/api/memories', memoryRouter);
+  app.use('/api/documents', documentRouter);
 
   // ---------------------------------------------------------------------------
   // Error handling (must be last)

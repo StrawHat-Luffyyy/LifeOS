@@ -58,6 +58,7 @@ export const listNotesSchema = z.object({
 export const searchNotesSchema = z.object({
   query: z.object({
     q: z.string().trim().min(1, 'Search query cannot be empty'),
+    mode: z.enum(['keyword', 'semantic', 'hybrid']).default('hybrid'),
     page: z.coerce.number().int().positive().default(1),
     limit: z.coerce.number().int().positive().max(100).default(20),
     projectId: z.string().uuid().optional(),

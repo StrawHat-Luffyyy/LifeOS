@@ -224,6 +224,8 @@ describe('NoteService', () => {
           tags: ['research'],
           projectId: null,
           searchVector: null,
+          embedding: null,
+          embeddingModel: null,
           userId,
           createdAt: new Date(),
           updatedAt: new Date(),
@@ -236,9 +238,39 @@ describe('NoteService', () => {
         total: 1,
       });
 
-      const res = await searchNotes(userId, { q: 'relevant', page: 1, limit: 10 });
+      const res = await searchNotes(userId, { q: 'relevant', mode: 'keyword', page: 1, limit: 10 });
       expect(res.data).toHaveLength(1);
       expect(res.data[0]?.title).toBe('Search Result');
+      expect(res.meta.total).toBe(1);
+    });
+
+    it('delegates to repository searchNotesHybrid when mode is hybrid', async () => {
+      const mockNotes = [
+        {
+          id: '123e4567-e89b-12d3-a456-426614174000',
+          title: 'Hybrid Search Result',
+          content: 'Found via RRF',
+          tags: ['research'],
+          projectId: null,
+          searchVector: null,
+          embedding: null,
+          embeddingModel: null,
+          userId,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+          deletedAt: null,
+        },
+      ];
+
+      vi.spyOn(noteRepo, 'searchNotesHybrid').mockResolvedValue({
+        rows: mockNotes,
+        total: 1,
+        scores: new Map([[mockNotes[0]!.id, 0.033]]),
+      });
+
+      const res = await searchNotes(userId, { q: 'hybrid query', mode: 'hybrid', page: 1, limit: 10 });
+      expect(res.data).toHaveLength(1);
+      expect(res.data[0]?.title).toBe('Hybrid Search Result');
       expect(res.meta.total).toBe(1);
     });
   });
@@ -252,6 +284,8 @@ describe('NoteService', () => {
         tags: [],
         projectId: null,
         searchVector: null,
+        embedding: null,
+        embeddingModel: null,
         userId,
         createdAt: new Date(),
         updatedAt: new Date(),

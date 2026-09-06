@@ -40,3 +40,5 @@ drizzle/meta/
 
 # Misc
 *.tsbuildinfo
+.playwright-mcp/
+packages/backend/data/

@@ -1,4 +1,4 @@
-import { eq, and, isNull, desc, asc, count } from 'drizzle-orm';
+import { eq, and, isNull, desc, asc, count, inArray } from 'drizzle-orm';
 import { db, type Database } from '../../db/index.js';
 import { conversations, messages, toolCalls } from '../../db/schema/index.js';
 import { type ListConversationsQuery } from '@lifeos/shared';
@@ -124,6 +124,7 @@ export async function softDeleteConversation(
 
 export async function insertMessage(
   data: {
+    id?: string;
     conversationId: string;
     role: string;
     content: string;
@@ -134,6 +135,7 @@ export async function insertMessage(
   const [row] = await tx
     .insert(messages)
     .values({
+      ...(data.id ? { id: data.id } : {}),
       conversationId: data.conversationId,
       role: data.role,
       content: data.content,
@@ -208,3 +210,16 @@ export async function listToolCallsByConversation(
     .where(eq(toolCalls.conversationId, conversationId))
     .orderBy(asc(toolCalls.createdAt));
 }
+
+export async function linkToolCallsToMessage(
+  toolCallIds: string[],
+  messageId: string,
+  tx: Database = db,
+): Promise<void> {
+  if (toolCallIds.length === 0) return;
+  await tx
+    .update(toolCalls)
+    .set({ messageId })
+    .where(inArray(toolCalls.id, toolCallIds));
+}
+
