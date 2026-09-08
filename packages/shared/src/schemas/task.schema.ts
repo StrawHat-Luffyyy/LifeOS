@@ -71,6 +71,24 @@ export const deleteTaskSchema = z.object({
   }),
 });
 
+/** Schema for adding a dependency to a task. */
+export const addTaskDependencySchema = z.object({
+  params: z.object({
+    id: z.string().uuid('Invalid task ID'),
+  }),
+  body: z.object({
+    dependsOnTaskId: z.string().uuid('Invalid dependsOnTaskId'),
+  }),
+});
+
+/** Schema for removing a dependency from a task. */
+export const removeTaskDependencySchema = z.object({
+  params: z.object({
+    id: z.string().uuid('Invalid task ID'),
+    dependsOnTaskId: z.string().uuid('Invalid dependsOnTaskId'),
+  }),
+});
+
 // ---------------------------------------------------------------------------
 // Inferred types for use in controllers/services
 // ---------------------------------------------------------------------------
@@ -78,3 +96,4 @@ export const deleteTaskSchema = z.object({
 export type CreateTaskInput = z.input<typeof createTaskSchema>['body'];
 export type UpdateTaskInput = z.input<typeof updateTaskSchema>['body'];
 export type ListTasksQuery = z.infer<typeof listTasksSchema>['query'];
+export type AddTaskDependencyInput = z.input<typeof addTaskDependencySchema>['body'];

@@ -20,14 +20,15 @@ describe('Tool Registry (P2-4, A-3, A-4)', () => {
     vi.clearAllMocks();
   });
 
-  it('should expose strictly 5 tools and correct risk tiers (P3-6)', () => {
-    expect(TOOL_DEFINITIONS).toHaveLength(5);
+  it('should expose strictly 6 tools and correct risk tiers (P3-6, P4-6)', () => {
+    expect(TOOL_DEFINITIONS).toHaveLength(6);
     expect(Object.keys(TOOL_REGISTRY)).toEqual([
       'createTask',
       'createNote',
       'updateTaskStatus',
       'getProjectContext',
       'searchMemory',
+      'queryPlanner',
     ]);
 
     expect(TOOL_REGISTRY['createTask']?.riskTier).toBe('WRITE');
@@ -35,6 +36,7 @@ describe('Tool Registry (P2-4, A-3, A-4)', () => {
     expect(TOOL_REGISTRY['updateTaskStatus']?.riskTier).toBe('WRITE');
     expect(TOOL_REGISTRY['getProjectContext']?.riskTier).toBe('READ_ONLY');
     expect(TOOL_REGISTRY['searchMemory']?.riskTier).toBe('READ_ONLY');
+    expect(TOOL_REGISTRY['queryPlanner']?.riskTier).toBe('READ_ONLY');
   });
 
   describe('createTask', () => {
@@ -213,6 +215,87 @@ describe('Tool Registry (P2-4, A-3, A-4)', () => {
 
       const returnedIds = result.results.map((r) => r.entityId);
       expect(returnedIds).not.toContain('mem-a');
+    });
+  });
+
+  describe('queryPlanner (P4-6, OD-7)', () => {
+    it('should invoke runPlanner and return formatted recommendations', async () => {
+      const { runPlanner } = await import('../agents/planner/planner.graph.js');
+      const mockPlannerResult = {
+        runId: 'run-123',
+        status: 'completed' as const,
+        output: {
+          recommendations: [
+            {
+              rank: 1,
+              taskId: 'task-1',
+              taskTitle: 'Critical Fix',
+              priority: 'urgent' as const,
+              dueDate: null,
+              isBlocked: false,
+              blockedBy: [],
+              reason: 'Unblocked urgent task',
+            },
+            {
+              rank: 2,
+              taskId: 'task-2',
+              taskTitle: 'Blocked Task',
+              priority: 'high' as const,
+              dueDate: null,
+              isBlocked: true,
+              blockedBy: ['task-1'],
+              reason: 'Blocked by task-1',
+            },
+          ],
+          rationale: 'Prioritize unblocked urgent bug fix first.',
+          unblockedCount: 1,
+          blockedCount: 1,
+        },
+        tokensUsed: 420,
+        durationMs: 850,
+        steps: ['GATHER_STRUCTURED_CONTEXT', 'REASON_AND_RANK', 'ENFORCE_HARD_CONSTRAINTS'],
+      };
+
+      vi.spyOn({ runPlanner }, 'runPlanner');
+      // Import the module to mock runPlanner
+      const plannerModule = await import('../agents/planner/planner.graph.js');
+      vi.spyOn(plannerModule, 'runPlanner').mockResolvedValue(mockPlannerResult as any);
+
+      const result = await TOOL_REGISTRY['queryPlanner']!.handler(
+        { projectId: 'proj-1', focus: 'urgent tasks' },
+        context,
+      );
+
+      expect(plannerModule.runPlanner).toHaveBeenCalledWith(userId, 'proj-1', 'urgent tasks');
+      expect(result).toEqual({
+        success: true,
+        status: 'completed',
+        rationale: 'Prioritize unblocked urgent bug fix first.',
+        recommendations: mockPlannerResult.output.recommendations,
+        unblockedCount: 1,
+        blockedCount: 1,
+      });
+    });
+
+    it('should handle non-completed status gracefully', async () => {
+      const plannerModule = await import('../agents/planner/planner.graph.js');
+      vi.spyOn(plannerModule, 'runPlanner').mockResolvedValue({
+        runId: 'run-fail',
+        status: 'timeout',
+        output: null,
+        tokensUsed: 8000,
+        durationMs: 45000,
+        steps: [],
+      } as any);
+
+      const result = await TOOL_REGISTRY['queryPlanner']!.handler({}, context);
+
+      expect(result).toEqual({
+        success: false,
+        status: 'timeout',
+        message: 'Planner could not complete recommendations.',
+        recommendations: [],
+      });
     });
   });
 });

@@ -53,4 +53,11 @@ router.delete(
   (req, res, next) => projectController.remove(req as AuthenticatedRequest, res, next),
 );
 
+// Continue Project (P4-3)
+router.post(
+  '/:id/continue',
+  validate(getProjectSchema),
+  (req, res, next) => projectController.continueProject(req as AuthenticatedRequest, res, next),
+);
+
 export { router as projectRouter };

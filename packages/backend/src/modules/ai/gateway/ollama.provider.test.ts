@@ -91,10 +91,14 @@ describe('OllamaProvider (P2-1, A-1)', () => {
     }
 
     expect(capturedBody).toBeDefined();
-    expect(capturedBody.options.think).toBe(false);
+    expect(capturedBody.think).toBe(false);
     expect(events).toEqual([
       { type: 'token', content: 'Hi' },
-      { type: 'done', finishReason: 'stop' },
+      {
+        type: 'done',
+        finishReason: 'stop',
+        usage: { promptTokens: 0, completionTokens: 0, totalTokens: 0 },
+      },
     ]);
   });
 
@@ -124,7 +128,11 @@ describe('OllamaProvider (P2-1, A-1)', () => {
     expect(events).toEqual([
       { type: 'token', content: 'Task ' },
       { type: 'token', content: 'created.' },
-      { type: 'done', finishReason: 'stop' },
+      {
+        type: 'done',
+        finishReason: 'stop',
+        usage: { promptTokens: 0, completionTokens: 0, totalTokens: 0 },
+      },
     ]);
   });
 
@@ -147,7 +155,11 @@ describe('OllamaProvider (P2-1, A-1)', () => {
 
     expect(events).toEqual([
       { type: 'token', content: 'Incomplete' },
-      { type: 'done', finishReason: 'length' },
+      {
+        type: 'done',
+        finishReason: 'length',
+        usage: { promptTokens: 0, completionTokens: 0, totalTokens: 0 },
+      },
     ]);
   });
 
@@ -193,8 +205,43 @@ describe('OllamaProvider (P2-1, A-1)', () => {
         name: 'createTask',
         arguments: { title: 'Buy milk', priority: 'high' },
       },
-      { type: 'done', finishReason: 'tool_calls' },
+      {
+        type: 'done',
+        finishReason: 'tool_calls',
+        usage: { promptTokens: 0, completionTokens: 0, totalTokens: 0 },
+      },
     ]);
+  });
+
+  it('should extract real prompt_eval_count and eval_count from Ollama done chunk into usage (B-1)', async () => {
+    const chunks = [
+      JSON.stringify({ message: { content: 'Plan created' }, done: false }) + '\n',
+      JSON.stringify({
+        done: true,
+        done_reason: 'stop',
+        prompt_eval_count: 142,
+        eval_count: 58,
+      }) + '\n',
+    ];
+
+    vi.spyOn(global, 'fetch').mockResolvedValue({
+      ok: true,
+      body: createMockStream(chunks),
+    } as any);
+
+    const provider = new OllamaProvider();
+    const events: any[] = [];
+    for await (const ev of provider.chat({ messages: [{ role: 'user', content: 'Plan' }] })) {
+      events.push(ev);
+    }
+
+    const doneEvent = events.find((e) => e.type === 'done');
+    expect(doneEvent).toBeDefined();
+    expect(doneEvent.usage).toEqual({
+      promptTokens: 142,
+      completionTokens: 58,
+      totalTokens: 200,
+    });
   });
 
   it('should retry once on malformed tool-call JSON, then fall back to plain text reply (P2-1)', async () => {
@@ -251,6 +298,8 @@ describe('OllamaProvider (P2-1, A-1)', () => {
     expect(events).toContainEqual(
       expect.objectContaining({ type: 'token', content: expect.stringContaining('I want to create a task') }),
     );
-    expect(events).toContainEqual({ type: 'done', finishReason: 'stop' });
+    expect(events).toContainEqual(
+      expect.objectContaining({ type: 'done', finishReason: 'stop' }),
+    );
   });
 });

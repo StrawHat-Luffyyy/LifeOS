@@ -2,6 +2,7 @@ import { type Response, type NextFunction } from 'express';
 import { type ApiResponse, type ProjectDto } from '@lifeos/shared';
 import { type AuthenticatedRequest } from '../../middleware/auth.js';
 import * as projectService from './project.service.js';
+import { runContinueProject } from '../ai/agents/continue-project/continue-project.graph.js';
 
 /**
  * POST /api/projects
@@ -85,6 +86,22 @@ export async function remove(
   try {
     await projectService.deleteProject(req.user.sub, req.params['id'] as string);
     res.status(200).json({ success: true, data: { message: 'Project deleted' } });
+  } catch (err) {
+    next(err);
+  }
+}
+
+/**
+ * POST /api/projects/:id/continue
+ */
+export async function continueProject(
+  req: AuthenticatedRequest,
+  res: Response,
+  next: NextFunction,
+): Promise<void> {
+  try {
+    const execution = await runContinueProject(req.user.sub, req.params['id'] as string);
+    res.status(200).json({ success: true, data: execution });
   } catch (err) {
     next(err);
   }

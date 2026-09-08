@@ -180,6 +180,64 @@ class ApiClient {
     }
     clearTokens();
   }
+
+  // ---------------------------------------------------------------------------
+  // Phase 4: Task Dependencies (P4-1)
+  // ---------------------------------------------------------------------------
+
+  async getTaskDependencies(taskId: string) {
+    return this.get<{ dependencies: any[]; dependents: any[] }>(`/api/tasks/${taskId}/dependencies`);
+  }
+
+  async addTaskDependency(taskId: string, dependsOnTaskId: string) {
+    return this.post<any>(`/api/tasks/${taskId}/dependencies`, { dependsOnTaskId });
+  }
+
+  async removeTaskDependency(taskId: string, dependsOnTaskId: string) {
+    return this.delete<{ success: boolean }>(`/api/tasks/${taskId}/dependencies/${dependsOnTaskId}`);
+  }
+
+  // ---------------------------------------------------------------------------
+  // Phase 4: Continue Project (P4-3, OD-3)
+  // ---------------------------------------------------------------------------
+
+  async continueProject(projectId: string) {
+    return this.post<any>(`/api/projects/${projectId}/continue`);
+  }
+
+  // ---------------------------------------------------------------------------
+  // Phase 4: Planner Agent (P4-4, Addendum B-3)
+  // ---------------------------------------------------------------------------
+
+  async runPlanner(data?: { projectId?: string; focus?: string }) {
+    return this.post<any>('/api/planner', data || {});
+  }
+
+  async acceptPlannerRecommendation(taskId: string, rationale?: string) {
+    return this.post<any>(`/api/planner/recommendations/${taskId}/accept`, { rationale });
+  }
+
+  async rejectPlannerRecommendation(taskId: string, rationale?: string) {
+    return this.post<any>(`/api/planner/recommendations/${taskId}/reject`, { rationale });
+  }
+
+  // ---------------------------------------------------------------------------
+  // Phase 4: Agent Runs Observability (P4-5, OD-7, FR-OBS-1)
+  // ---------------------------------------------------------------------------
+
+  async listAgentRuns(params?: { agentType?: string; projectId?: string; limit?: number; page?: number }) {
+    const query = new URLSearchParams();
+    if (params?.agentType) query.set('agentType', params.agentType);
+    if (params?.projectId) query.set('projectId', params.projectId);
+    if (params?.limit) query.set('limit', String(params.limit));
+    if (params?.page) query.set('page', String(params.page));
+    const qs = query.toString();
+    return this.get<any[]>(`/api/agent-runs${qs ? `?${qs}` : ''}`);
+  }
+
+  async getAgentRun(id: string) {
+    return this.get<any>(`/api/agent-runs/${id}`);
+  }
 }
 
 // ---------------------------------------------------------------------------

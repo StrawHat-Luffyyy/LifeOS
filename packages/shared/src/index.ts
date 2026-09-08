@@ -7,3 +7,4 @@ export * from './schemas/activity.schema.js';
 export * from './schemas/conversation.schema.js';
 export * from './schemas/memory.schema.js';
 export * from './schemas/document.schema.js';
+export * from './schemas/agent.schema.js';

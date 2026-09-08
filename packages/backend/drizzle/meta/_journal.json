@@ -36,6 +36,13 @@
       "when": 1788597903776,
       "tag": "0004_silent_paibok",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1788700000000,
+      "tag": "0005_agentic_intelligence",
+      "breakpoints": true
     }
   ]
 }

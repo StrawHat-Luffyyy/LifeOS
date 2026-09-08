@@ -18,6 +18,8 @@ import { ProjectView } from "./components/ProjectView";
 import { ChatView } from "./components/ChatView";
 import { MemoryView } from "./components/MemoryView";
 import { DocumentManagerView } from "./components/DocumentManagerView";
+import { PlannerView } from "@/components/planner/PlannerView";
+import { AgentRunsView } from "@/components/agent-runs/AgentRunsView";
 
 export default function DashboardPage() {
   const router = useRouter();
@@ -47,13 +49,19 @@ export default function DashboardPage() {
     }
   }, []);
 
-  const isCustomView = selectedScope === "all" || selectedScope === "unassigned" || selectedScope === "chat" || selectedScope === "knowledge";
+  const isCustomView =
+    selectedScope === "all" ||
+    selectedScope === "unassigned" ||
+    selectedScope === "chat" ||
+    selectedScope === "knowledge" ||
+    selectedScope === "planner" ||
+    selectedScope === "agent-runs";
   const isProjectScope = !isCustomView;
 
   const fetchTasks = useCallback(async () => {
     try {
       let endpoint = "/api/tasks";
-      if (selectedScope !== "all" && selectedScope !== "unassigned" && selectedScope !== "chat" && selectedScope !== "knowledge") {
+      if (isProjectScope) {
         endpoint = `/api/tasks?projectId=${selectedScope}`;
       }
       const res = await api.get<TaskDto[]>(endpoint);
@@ -65,12 +73,12 @@ export default function DashboardPage() {
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to load tasks");
     }
-  }, [selectedScope]);
+  }, [selectedScope, isProjectScope]);
 
   const fetchNotes = useCallback(async () => {
     try {
       let endpoint = "/api/notes";
-      if (selectedScope !== "all" && selectedScope !== "unassigned" && selectedScope !== "chat" && selectedScope !== "knowledge") {
+      if (isProjectScope) {
         endpoint = `/api/notes?projectId=${selectedScope}`;
       }
       const res = await api.get<NoteDto[]>(endpoint);
@@ -79,12 +87,12 @@ export default function DashboardPage() {
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to load notes");
     }
-  }, [selectedScope]);
+  }, [selectedScope, isProjectScope]);
 
   const fetchActivity = useCallback(async () => {
     try {
       let endpoint = "/api/activity";
-      if (selectedScope !== "all" && selectedScope !== "unassigned" && selectedScope !== "chat" && selectedScope !== "knowledge") {
+      if (isProjectScope) {
         endpoint = `/api/projects/${selectedScope}/activity`;
       }
       const res = await api.get<ActivityEventDto[]>(endpoint);
@@ -93,7 +101,7 @@ export default function DashboardPage() {
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to load activity");
     }
-  }, [selectedScope]);
+  }, [selectedScope, isProjectScope]);
 
   // Initial load and scope synchronization
   useEffect(() => {
@@ -406,6 +414,10 @@ export default function DashboardPage() {
                   />
                 )}
               </div>
+            ) : selectedScope === "planner" ? (
+              <PlannerView initialProjectId={null} />
+            ) : selectedScope === "agent-runs" ? (
+              <AgentRunsView />
             ) : selectedProject ? (
               <ProjectView
                 project={selectedProject}
@@ -470,6 +482,7 @@ export default function DashboardPage() {
                     onCreateTask={handleCreateTask}
                     onToggleStatus={handleToggleTaskStatus}
                     onDeleteTask={handleDeleteTask}
+                    onRefreshTasks={fetchTasks}
                     loading={loading}
                   />
                 ) : (

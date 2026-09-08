@@ -58,11 +58,13 @@ export const EVENT_TYPES = [
   'AI_CHAT_STARTED',
   'AI_TOOL_CALLED',
   'AGENT_EXECUTED',
+  'PLANNER_RECOMMENDATION_ACCEPTED',
+  'PLANNER_RECOMMENDATION_REJECTED',
 ] as const;
 export type EventType = (typeof EVENT_TYPES)[number];
 
 /** Entity types that activity events can reference. */
-export const ENTITY_TYPES = ['task', 'project', 'note', 'document', 'conversation', 'memory'] as const;
+export const ENTITY_TYPES = ['task', 'project', 'note', 'document', 'conversation', 'memory', 'agent_run'] as const;
 export type EntityType = (typeof ENTITY_TYPES)[number];
 
 // ---------------------------------------------------------------------------
@@ -113,6 +115,15 @@ export interface PaginatedResponse<T> extends ApiResponse<T[]> {
 // Domain DTOs — Task
 // ---------------------------------------------------------------------------
 
+export interface TaskDependencyDto {
+  id: string;
+  taskId: string;
+  dependsOnTaskId: string;
+  createdAt: string;
+  dependsOnTaskTitle?: string;
+  dependsOnTaskStatus?: TaskStatus;
+}
+
 /** Shape of a Task as returned by the API. */
 export interface TaskDto {
   id: string;
@@ -125,6 +136,9 @@ export interface TaskDto {
   userId: string;
   createdAt: string;
   updatedAt: string;
+  dependencies?: TaskDependencyDto[];
+  blockedBy?: string[];
+  isBlocked?: boolean;
 }
 
 // ---------------------------------------------------------------------------
@@ -375,6 +389,72 @@ export interface SearchMemoryInput {
   category?: MemoryCategory;
   projectId?: string;
   limit?: number;
+}
+
+// ---------------------------------------------------------------------------
+// Agentic Intelligence DTOs (Phase 4 - FR-CONT, FR-PLAN, FR-OBS)
+// ---------------------------------------------------------------------------
+
+export const AGENT_TYPES = ['planner', 'continue_project'] as const;
+export type AgentType = (typeof AGENT_TYPES)[number];
+
+export const AGENT_RUN_STATUSES = ['completed', 'timeout', 'budget_exceeded', 'failed'] as const;
+export type AgentRunStatus = (typeof AGENT_RUN_STATUSES)[number];
+
+export interface AgentStepSummaryItem {
+  step: string;
+  description: string;
+  timestamp?: string;
+}
+
+export interface AgentRunDto {
+  id: string;
+  userId: string;
+  agentType: AgentType;
+  projectId: string | null;
+  status: AgentRunStatus;
+  stepsSummary: AgentStepSummaryItem[];
+  output: Record<string, unknown> | null;
+  metadata: Record<string, unknown> | null;
+  startedAt: string;
+  completedAt: string | null;
+}
+
+export interface PlannerRecommendationDto {
+  taskId: string;
+  taskTitle: string;
+  priority: Priority;
+  status: TaskStatus;
+  dueDate: string | null;
+  rank: number;
+  rationale: string;
+  isBlocked: boolean;
+  blockingTaskTitles: string[];
+}
+
+export interface PlannerOutputDto {
+  recommendations: PlannerRecommendationDto[];
+  rationale: string;
+  unblockedCount: number;
+  blockedCount: number;
+}
+
+export interface ContinueProjectCitationDto {
+  index: number;
+  text: string;
+  entityType: string;
+  entityId: string;
+}
+
+export interface ContinueProjectSummaryDto {
+  currentState: string;
+  recentProgress: string;
+  openTasks: string;
+  recentDecisions: string;
+  blockers: string;
+  suggestedNextStep: string;
+  citations: ContinueProjectCitationDto[];
+  citationStatus: 'clean' | 'retried' | 'claim_stripped';
 }
 
 

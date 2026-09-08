@@ -65,3 +65,50 @@ export async function remove(req: AuthenticatedRequest, res: Response, next: Nex
     next(err);
   }
 }
+
+/**
+ * POST /api/tasks/:id/dependencies
+ */
+export async function addDependency(req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> {
+  try {
+    const dependency = await taskService.addDependency(
+      req.user.sub,
+      req.params['id'] as string,
+      req.body.dependsOnTaskId,
+    );
+    res.status(201).json({ success: true, data: dependency });
+  } catch (err) {
+    next(err);
+  }
+}
+
+/**
+ * DELETE /api/tasks/:id/dependencies/:dependsOnTaskId
+ */
+export async function removeDependency(req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> {
+  try {
+    const result = await taskService.removeDependency(
+      req.user.sub,
+      req.params['id'] as string,
+      req.params['dependsOnTaskId'] as string,
+    );
+    res.status(200).json({ success: true, data: result });
+  } catch (err) {
+    next(err);
+  }
+}
+
+/**
+ * GET /api/tasks/:id/dependencies
+ */
+export async function getDependencies(req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> {
+  try {
+    const result = await taskService.getTaskDependencies(
+      req.user.sub,
+      req.params['id'] as string,
+    );
+    res.status(200).json({ success: true, data: result });
+  } catch (err) {
+    next(err);
+  }
+}

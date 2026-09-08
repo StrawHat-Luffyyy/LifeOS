@@ -27,6 +27,8 @@ interface OllamaChunk {
   done_reason?: string;
   finish_reason?: string;
   error?: string;
+  prompt_eval_count?: number;
+  eval_count?: number;
 }
 
 /**
@@ -168,10 +170,11 @@ export class OllamaProvider implements LLMProvider {
       model: this.model,
       messages,
       stream: true,
+      // Top-level think property for Qwen3 / DeepSeek reasoning models in Ollama 0.3+
+      think: false,
       options: {
         temperature: options.temperature ?? this.defaultTemperature,
-        // Disable Qwen3 thinking mode to avoid chain-of-thought token leak (A-1, FR-OBS-2)
-        think: false,
+        ...(options.maxTokens !== undefined ? { num_predict: options.maxTokens } : {}),
       },
     };
 
@@ -204,6 +207,8 @@ export class OllamaProvider implements LLMProvider {
     let detectedFinishReason: FinishReason | null = null;
     let malformedToolCallEncountered = false;
     let rawContentAccumulated = '';
+    let promptTokens = 0;
+    let completionTokens = 0;
 
     while (true) {
       const { done, value } = await reader.read();
@@ -285,6 +290,12 @@ export class OllamaProvider implements LLMProvider {
 
         // Ollama finish_reason / done_reason handling
         if (parsed.done) {
+          if (typeof parsed.prompt_eval_count === 'number') {
+            promptTokens = parsed.prompt_eval_count;
+          }
+          if (typeof parsed.eval_count === 'number') {
+            completionTokens = parsed.eval_count;
+          }
           const reason = parsed.done_reason || parsed.finish_reason || 'stop';
           if (reason === 'length') {
             detectedFinishReason = 'length';
@@ -319,7 +330,15 @@ export class OllamaProvider implements LLMProvider {
         if (rawContentAccumulated) {
           yield { type: 'token', content: rawContentAccumulated };
         }
-        yield { type: 'done', finishReason: 'stop' };
+        yield {
+          type: 'done',
+          finishReason: 'stop',
+          usage: {
+            promptTokens,
+            completionTokens,
+            totalTokens: promptTokens + completionTokens,
+          },
+        };
         return;
       }
     }
@@ -328,6 +347,14 @@ export class OllamaProvider implements LLMProvider {
       detectedFinishReason ??
       (accumulatedToolCalls.length > 0 ? 'tool_calls' : 'stop');
 
-    yield { type: 'done', finishReason: finalReason };
+    yield {
+      type: 'done',
+      finishReason: finalReason,
+      usage: {
+        promptTokens,
+        completionTokens,
+        totalTokens: promptTokens + completionTokens,
+      },
+    };
   }
 }

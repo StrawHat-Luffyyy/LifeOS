@@ -42,3 +42,4 @@ drizzle/meta/
 *.tsbuildinfo
 .playwright-mcp/
 packages/backend/data/
+/*.png

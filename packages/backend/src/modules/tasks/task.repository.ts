@@ -1,6 +1,6 @@
-import { eq, and, isNull, desc, asc, count, type SQL } from 'drizzle-orm';
+import { eq, and, isNull, desc, asc, count, inArray, type SQL } from 'drizzle-orm';
 import { db, type Database } from '../../db/index.js';
-import { tasks } from '../../db/schema/index.js';
+import { tasks, taskDependencies } from '../../db/schema/index.js';
 import { type ListTasksQuery } from '@lifeos/shared';
 import { NotFoundError } from '../../lib/errors.js';
 
@@ -10,6 +10,7 @@ import { NotFoundError } from '../../lib/errors.js';
 
 type TaskRow = typeof tasks.$inferSelect;
 type TaskInsert = typeof tasks.$inferInsert;
+export type TaskDependencyRow = typeof taskDependencies.$inferSelect;
 
 // ---------------------------------------------------------------------------
 // Repository
@@ -149,4 +150,128 @@ export async function softDeleteTask(
 
   if (!row) throw new NotFoundError('Task', taskId);
   return row;
+}
+
+// ---------------------------------------------------------------------------
+// Task Dependency Repository Methods (P4-1)
+// ---------------------------------------------------------------------------
+
+/**
+ * Insert a dependency link (taskId depends on dependsOnTaskId).
+ */
+export async function insertTaskDependency(
+  taskId: string,
+  dependsOnTaskId: string,
+  tx: Database = db,
+): Promise<TaskDependencyRow> {
+  const [row] = await tx
+    .insert(taskDependencies)
+    .values({ taskId, dependsOnTaskId })
+    .returning();
+  if (!row) throw new Error('Failed to insert task dependency');
+  return row;
+}
+
+/**
+ * Delete a dependency link.
+ */
+export async function deleteTaskDependency(
+  taskId: string,
+  dependsOnTaskId: string,
+  tx: Database = db,
+): Promise<boolean> {
+  const result = await tx
+    .delete(taskDependencies)
+    .where(
+      and(
+        eq(taskDependencies.taskId, taskId),
+        eq(taskDependencies.dependsOnTaskId, dependsOnTaskId),
+      ),
+    )
+    .returning();
+  return result.length > 0;
+}
+
+/**
+ * Find single dependency relation.
+ */
+export async function findTaskDependency(
+  taskId: string,
+  dependsOnTaskId: string,
+): Promise<TaskDependencyRow | undefined> {
+  const [row] = await db
+    .select()
+    .from(taskDependencies)
+    .where(
+      and(
+        eq(taskDependencies.taskId, taskId),
+        eq(taskDependencies.dependsOnTaskId, dependsOnTaskId),
+      ),
+    );
+  return row;
+}
+
+/**
+ * List all dependencies for a user (used for in-memory cycle detection & graph traversal).
+ * Ensures both tasks belong to the user and are not soft-deleted.
+ */
+export async function listAllUserDependencies(
+  userId: string,
+): Promise<Array<{ taskId: string; dependsOnTaskId: string }>> {
+  const userTasks = await db
+    .select({ id: tasks.id })
+    .from(tasks)
+    .where(and(eq(tasks.userId, userId), isNull(tasks.deletedAt)));
+
+  const taskIds = userTasks.map((t) => t.id);
+  if (taskIds.length === 0) return [];
+
+  return await db
+    .select({
+      taskId: taskDependencies.taskId,
+      dependsOnTaskId: taskDependencies.dependsOnTaskId,
+    })
+    .from(taskDependencies)
+    .where(
+      and(
+        inArray(taskDependencies.taskId, taskIds),
+        inArray(taskDependencies.dependsOnTaskId, taskIds),
+      ),
+    );
+}
+
+/**
+ * List what this task depends on (prerequisites).
+ */
+export async function listTaskPrerequisites(
+  taskId: string,
+): Promise<Array<{ dependency: TaskDependencyRow; task: TaskRow }>> {
+  const rows = await db
+    .select({
+      dependency: taskDependencies,
+      task: tasks,
+    })
+    .from(taskDependencies)
+    .innerJoin(tasks, eq(tasks.id, taskDependencies.dependsOnTaskId))
+    .where(and(eq(taskDependencies.taskId, taskId), isNull(tasks.deletedAt)));
+
+  return rows;
+}
+
+/**
+ * List tasks that depend on this task (tasks blocked by this task).
+ */
+export async function listTaskDependents(
+  taskId: string,
+): Promise<Array<{ dependency: TaskDependencyRow; task: TaskRow }>> {
+  const rows = await db
+    .select({
+      dependency: taskDependencies,
+      task: tasks,
+    })
+    .from(taskDependencies)
+    .innerJoin(tasks, eq(tasks.id, taskDependencies.taskId))
+    .where(and(eq(taskDependencies.dependsOnTaskId, taskId), isNull(tasks.deletedAt)));
+
+  return rows;
 }

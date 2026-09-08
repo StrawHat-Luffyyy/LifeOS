@@ -35,15 +35,22 @@ export interface ChatOptions {
   messages: LLMMessage[];
   tools?: ToolDefinition[];
   temperature?: number;
+  maxTokens?: number;
   signal?: AbortSignal;
 }
 
 export type FinishReason = 'stop' | 'length' | 'tool_calls' | 'interrupted' | 'error';
 
+export interface TokenUsage {
+  promptTokens: number;
+  completionTokens: number;
+  totalTokens: number;
+}
+
 export type LLMChatEvent =
   | { type: 'token'; content: string }
   | { type: 'tool_call'; id: string; name: string; arguments: Record<string, unknown> }
-  | { type: 'done'; finishReason: FinishReason }
+  | { type: 'done'; finishReason: FinishReason; usage?: TokenUsage }
   | { type: 'error'; error: string };
 
 export interface LLMProvider {

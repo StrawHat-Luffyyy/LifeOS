@@ -14,6 +14,9 @@ vi.mock('./task.service.js', () => ({
   listTasks: vi.fn(),
   updateTask: vi.fn(),
   deleteTask: vi.fn(),
+  addDependency: vi.fn(),
+  removeDependency: vi.fn(),
+  getTaskDependencies: vi.fn(),
 }));
 
 describe('Task Routes Integration', () => {
@@ -222,6 +225,69 @@ describe('Task Routes Integration', () => {
       expect(res.body.success).toBe(true);
       expect(res.body.data.message).toBe('Task deleted');
       expect(taskService.deleteTask).toHaveBeenCalledWith(userId, taskId);
+    });
+  });
+
+  describe('Task Dependency Endpoints (P4-1)', () => {
+    const taskId = '22222222-2222-2222-2222-222222222222';
+    const dependsOnTaskId = '33333333-3333-3333-3333-333333333333';
+
+    it('POST /api/tasks/:id/dependencies adds dependency and returns 201', async () => {
+      vi.mocked(taskService.addDependency).mockResolvedValue({
+        id: 'dep-1',
+        taskId,
+        dependsOnTaskId,
+        createdAt: new Date().toISOString(),
+        dependsOnTaskTitle: 'Prerequisite task',
+        dependsOnTaskStatus: 'todo',
+      });
+
+      const res = await request(app)
+        .post(`/api/tasks/${taskId}/dependencies`)
+        .set('Authorization', authHeader)
+        .send({ dependsOnTaskId });
+
+      expect(res.status).toBe(201);
+      expect(res.body.success).toBe(true);
+      expect(res.body.data.dependsOnTaskId).toBe(dependsOnTaskId);
+      expect(taskService.addDependency).toHaveBeenCalledWith(userId, taskId, dependsOnTaskId);
+    });
+
+    it('DELETE /api/tasks/:id/dependencies/:dependsOnTaskId removes dependency and returns 200', async () => {
+      vi.mocked(taskService.removeDependency).mockResolvedValue({ success: true });
+
+      const res = await request(app)
+        .delete(`/api/tasks/${taskId}/dependencies/${dependsOnTaskId}`)
+        .set('Authorization', authHeader);
+
+      expect(res.status).toBe(200);
+      expect(res.body.success).toBe(true);
+      expect(taskService.removeDependency).toHaveBeenCalledWith(userId, taskId, dependsOnTaskId);
+    });
+
+    it('GET /api/tasks/:id/dependencies returns dependency lists', async () => {
+      vi.mocked(taskService.getTaskDependencies).mockResolvedValue({
+        dependencies: [
+          {
+            id: 'dep-1',
+            taskId,
+            dependsOnTaskId,
+            createdAt: new Date().toISOString(),
+            dependsOnTaskTitle: 'Prereq',
+            dependsOnTaskStatus: 'todo',
+          },
+        ],
+        dependents: [],
+      });
+
+      const res = await request(app)
+        .get(`/api/tasks/${taskId}/dependencies`)
+        .set('Authorization', authHeader);
+
+      expect(res.status).toBe(200);
+      expect(res.body.success).toBe(true);
+      expect(res.body.data.dependencies).toHaveLength(1);
+      expect(taskService.getTaskDependencies).toHaveBeenCalledWith(userId, taskId);
     });
   });
 });

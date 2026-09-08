@@ -11,6 +11,7 @@ import {
 import { TaskList } from "./TaskList";
 import { NoteList } from "./NoteList";
 import { ActivityFeed } from "./ActivityFeed";
+import { ContinueProjectModal } from "@/components/continue-project/ContinueProjectModal";
 
 interface ProjectViewProps {
   project: ProjectDto;
@@ -46,6 +47,7 @@ export function ProjectView({
   loading,
 }: ProjectViewProps) {
   const [activeTab, setActiveTab] = useState<"tasks" | "notes" | "activity">("tasks");
+  const [isContinueModalOpen, setIsContinueModalOpen] = useState(false);
 
   return (
     <div className="space-y-6">
@@ -71,13 +73,21 @@ export function ProjectView({
           </div>
 
           <div className="flex items-center gap-2">
+            <button
+              data-testid="continue-project-btn"
+              onClick={() => setIsContinueModalOpen(true)}
+              className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg bg-indigo-600/20 hover:bg-indigo-600/30 text-indigo-300 border border-indigo-500/40 font-medium transition-colors cursor-pointer"
+              title="Synthesize project state, progress, and next steps with verifiable citations"
+            >
+              <span>✨</span> Continue Project
+            </button>
             {onOpenChat && (
               <button
                 onClick={() => onOpenChat(project.id)}
                 className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg bg-purple-600/20 hover:bg-purple-600/30 text-purple-300 border border-purple-500/40 font-medium transition-colors"
                 title="Chat with LifeOS AI about this project"
               >
-                <span>✨</span> Ask Project AI
+                <span>💬</span> Ask Project AI
               </button>
             )}
             <button
@@ -156,6 +166,14 @@ export function ProjectView({
       {activeTab === "activity" && (
         <ActivityFeed events={activity} loading={loading} />
       )}
+
+      {/* Continue Project Modal (P4-3, OD-3) */}
+      <ContinueProjectModal
+        projectId={project.id}
+        projectName={project.name}
+        isOpen={isContinueModalOpen}
+        onClose={() => setIsContinueModalOpen(false)}
+      />
     </div>
   );
 }

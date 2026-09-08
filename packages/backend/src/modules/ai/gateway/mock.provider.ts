@@ -54,12 +54,24 @@ export class MockLLMProvider implements LLMProvider {
     }
 
     for (const event of seq.events) {
+      if (seq.delayMs && seq.delayMs > 0) {
+        await new Promise((resolve) => {
+          const timer = setTimeout(resolve, seq.delayMs);
+          if (options.signal) {
+            options.signal.addEventListener(
+              'abort',
+              () => {
+                clearTimeout(timer);
+                resolve(undefined);
+              },
+              { once: true },
+            );
+          }
+        });
+      }
       if (options.signal?.aborted) {
         yield { type: 'done', finishReason: 'interrupted' };
         return;
-      }
-      if (seq.delayMs && seq.delayMs > 0) {
-        await new Promise((resolve) => setTimeout(resolve, seq.delayMs));
       }
       yield event;
     }

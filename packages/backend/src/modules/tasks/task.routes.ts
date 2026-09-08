@@ -7,6 +7,8 @@ import {
   getTaskSchema,
   listTasksSchema,
   deleteTaskSchema,
+  addTaskDependencySchema,
+  removeTaskDependencySchema,
 } from '@lifeos/shared';
 import * as taskController from './task.controller.js';
 
@@ -43,6 +45,25 @@ router.delete(
   '/:id',
   validate(deleteTaskSchema),
   (req, res, next) => taskController.remove(req as AuthenticatedRequest, res, next),
+);
+
+// Task Dependency Routes (P4-1)
+router.post(
+  '/:id/dependencies',
+  validate(addTaskDependencySchema),
+  (req, res, next) => taskController.addDependency(req as AuthenticatedRequest, res, next),
+);
+
+router.delete(
+  '/:id/dependencies/:dependsOnTaskId',
+  validate(removeTaskDependencySchema),
+  (req, res, next) => taskController.removeDependency(req as AuthenticatedRequest, res, next),
+);
+
+router.get(
+  '/:id/dependencies',
+  validate(getTaskSchema),
+  (req, res, next) => taskController.getDependencies(req as AuthenticatedRequest, res, next),
 );
 
 export { router as taskRouter };

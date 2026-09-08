@@ -5,6 +5,7 @@ import * as noteService from '../../notes/note.service.js';
 import * as projectService from '../../projects/project.service.js';
 import * as activityService from '../../activity/activity.service.js';
 import { hybridRetrievalService } from '../retrieval/hybrid-retrieval.service.js';
+import { runPlanner } from '../agents/planner/planner.graph.js';
 
 export interface ToolExecutionContext {
   userId: string;
@@ -130,12 +131,35 @@ export const searchMemoryToolDef: ToolDefinition = {
   },
 };
 
+export const queryPlannerToolDef: ToolDefinition = {
+  type: 'function',
+  function: {
+    name: 'queryPlanner',
+    description:
+      'Retrieve prioritized task recommendations and planning advice from the Planner Agent. Use this whenever the user asks what they should work on, what to do next, or how to prioritize tasks.',
+    parameters: {
+      type: 'object',
+      properties: {
+        projectId: {
+          type: 'string',
+          description: 'Optional UUID of a project to focus recommendations on.',
+        },
+        focus: {
+          type: 'string',
+          description: 'Optional focus criteria (e.g., "urgent tasks", "engineering", "quick wins").',
+        },
+      },
+    },
+  },
+};
+
 export const TOOL_DEFINITIONS: ToolDefinition[] = [
   createTaskToolDef,
   createNoteToolDef,
   updateTaskStatusToolDef,
   getProjectContextToolDef,
   searchMemoryToolDef,
+  queryPlannerToolDef,
 ];
 
 export const TOOL_REGISTRY: Record<string, RegisteredTool> = {
@@ -262,6 +286,35 @@ export const TOOL_REGISTRY: Record<string, RegisteredTool> = {
         success: true,
         count: results.length,
         results,
+      };
+    },
+  },
+  queryPlanner: {
+    name: 'queryPlanner',
+    riskTier: 'READ_ONLY',
+    definition: queryPlannerToolDef,
+    handler: async (args, context) => {
+      const projectId = args['projectId'] ? String(args['projectId']) : undefined;
+      const focus = args['focus'] ? String(args['focus']) : undefined;
+
+      const result = await runPlanner(context.userId, projectId, focus);
+
+      if (result.status !== 'completed' || !result.output) {
+        return {
+          success: false,
+          status: result.status,
+          message: 'Planner could not complete recommendations.',
+          recommendations: [],
+        };
+      }
+
+      return {
+        success: true,
+        status: result.status,
+        rationale: result.output.rationale,
+        recommendations: result.output.recommendations,
+        unblockedCount: result.output.unblockedCount,
+        blockedCount: result.output.blockedCount,
       };
     },
   },

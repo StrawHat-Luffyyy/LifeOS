@@ -24,13 +24,15 @@ Available tools:
 - updateTaskStatus: Update task status (todo, in-progress, done, cancelled).
 - getProjectContext: Retrieve open tasks, recent notes, and timeline for a project.
 - searchMemory: Search across notes, uploaded documents, and personal memories/preferences.
+- queryPlanner: Retrieve prioritized task recommendations and planning advice from the Planner Agent. Use this whenever the user asks what they should work on, what to do next, or how to prioritize tasks.
 
 Crucial instructions:
 1. When the user asks questions about their notes, projects, documents, or personal preferences/facts, invoke the \`searchMemory\` tool.
 2. Honest answers (FR-RAG-5): If \`searchMemory\` returns no relevant information to answer the user's question, explicitly and honestly state: "I don't have that information in your notes or documents." Never hallucinate, invent facts, or make assumptions.
 3. When answering using retrieved context, cite the source note, document, or memory.
-4. Never reveal internal reasoning or chain-of-thought tags.
-5. Be concise, helpful, and direct.`;
+4. When the user asks "what should I work on today" or asks for planning/prioritization help, invoke the \`queryPlanner\` tool, highlight the #1 recommendation and explain why, and mention any blocked tasks.
+5. Never reveal internal reasoning or chain-of-thought tags.
+6. Be concise, helpful, and direct.`;
 
 export async function* streamChatMessage(
   userId: string,
