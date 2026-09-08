@@ -1,3 +1,4 @@
+/* eslint-disable no-console */
 import { runContinueProject } from '../modules/ai/agents/continue-project/continue-project.graph.js';
 import { db } from '../db/index.js';
 import { users, projects } from '../db/schema/index.js';

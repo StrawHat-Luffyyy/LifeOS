@@ -17,7 +17,7 @@ export function ContinueProjectModal({
   isOpen,
   onClose,
 }: ContinueProjectModalProps) {
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [summary, setSummary] = useState<ContinueProjectSummaryDto | null>(null);
   const [runMetadata, setRunMetadata] = useState<{
@@ -27,39 +27,61 @@ export function ContinueProjectModal({
   } | null>(null);
   const [selectedCitation, setSelectedCitation] = useState<ContinueProjectCitationDto | null>(null);
 
-  useEffect(() => {
-    if (isOpen) {
-      loadContinueProject();
-    } else {
-      setSummary(null);
-      setError(null);
-      setSelectedCitation(null);
-    }
-  }, [isOpen, projectId]);
-
   async function loadContinueProject() {
     setLoading(true);
     setError(null);
+    setSummary(null);
+    setSelectedCitation(null);
     try {
       const res = await api.continueProject(projectId);
       if (res.data) {
         if (res.data.status && res.data.status !== 'completed') {
-          setError(`Agent run ended with status ${res.data.status}: ${res.data.error || 'Execution stopped'}`);
+          setError(`Agent run ended with status ${String(res.data.status)}: ${String(res.data.error || 'Execution stopped')}`);
         } else {
-          setSummary(res.data.output || res.data.result);
+          setSummary((res.data.output || res.data.result) as ContinueProjectSummaryDto);
         }
         setRunMetadata({
-          tokensUsed: res.data.tokensUsed || 0,
-          durationMs: res.data.durationMs || 0,
-          runId: res.data.runId || '',
+          tokensUsed: Number(res.data.tokensUsed) || 0,
+          durationMs: Number(res.data.durationMs) || 0,
+          runId: String(res.data.runId || ''),
         });
       }
-    } catch (err: any) {
-      setError(err.message || 'Failed to synthesize project context');
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Failed to synthesize project context');
     } finally {
       setLoading(false);
     }
   }
+
+  useEffect(() => {
+    if (!isOpen) return;
+    let ignore = false;
+    api.continueProject(projectId).then((res) => {
+      if (!ignore) {
+        if (res.data) {
+          if (res.data.status && res.data.status !== 'completed') {
+            setError(`Agent run ended with status ${String(res.data.status)}: ${String(res.data.error || 'Execution stopped')}`);
+          } else {
+            setSummary((res.data.output || res.data.result) as ContinueProjectSummaryDto);
+          }
+          setRunMetadata({
+            tokensUsed: Number(res.data.tokensUsed) || 0,
+            durationMs: Number(res.data.durationMs) || 0,
+            runId: String(res.data.runId || ''),
+          });
+        }
+        setLoading(false);
+      }
+    }).catch((err: unknown) => {
+      if (!ignore) {
+        setError(err instanceof Error ? err.message : 'Failed to synthesize project context');
+        setLoading(false);
+      }
+    });
+    return () => {
+      ignore = true;
+    };
+  }, [isOpen, projectId]);
 
   if (!isOpen) return null;
 

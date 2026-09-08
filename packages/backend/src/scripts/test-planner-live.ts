@@ -1,3 +1,4 @@
+/* eslint-disable no-console */
 import { runPlanner } from '../modules/ai/agents/planner/planner.graph.js';
 import { db } from '../db/index.js';
 import { users, projects } from '../db/schema/index.js';

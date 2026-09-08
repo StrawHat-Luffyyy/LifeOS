@@ -10,10 +10,6 @@ export function AgentRunsView() {
   const [filterType, setFilterType] = useState<AgentType | ''>('');
   const [expandedRunId, setExpandedRunId] = useState<string | null>(null);
 
-  useEffect(() => {
-    loadRuns();
-  }, [filterType]);
-
   async function loadRuns() {
     setLoading(true);
     try {
@@ -30,6 +26,24 @@ export function AgentRunsView() {
       setLoading(false);
     }
   }
+
+  useEffect(() => {
+    let ignore = false;
+    api.listAgentRuns({
+      agentType: filterType || undefined,
+      limit: 50,
+    }).then((res) => {
+      if (!ignore) {
+        if (res.data) setRuns(res.data);
+        setLoading(false);
+      }
+    }).catch(() => {
+      if (!ignore) setLoading(false);
+    });
+    return () => {
+      ignore = true;
+    };
+  }, [filterType]);
 
   return (
     <div className="space-y-6 max-w-5xl mx-auto p-4 animate-fade-in">
@@ -56,7 +70,7 @@ export function AgentRunsView() {
         <div className="flex items-center gap-3">
           <select
             value={filterType}
-            onChange={(e) => setFilterType(e.target.value as any)}
+            onChange={(e) => setFilterType(e.target.value as AgentType | '')}
             className="px-3 py-2 text-xs rounded-xl bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 text-zinc-900 dark:text-zinc-100 font-medium focus:ring-2 focus:ring-purple-500 outline-none"
           >
             <option value="">All Agent Types</option>

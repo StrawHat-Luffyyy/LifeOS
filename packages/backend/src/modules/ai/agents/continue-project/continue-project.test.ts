@@ -2,7 +2,6 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import {
   validateCitations,
   stripUngroundedClaims,
-  buildEvidencePool,
 } from './citation-validator.js';
 import { runContinueProject } from './continue-project.graph.js';
 import { setLLMProviderForTesting } from '../../gateway/index.js';

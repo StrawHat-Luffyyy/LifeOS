@@ -1,7 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import {
   RunGuardrails,
-  RunTimeoutError,
   RunBudgetExceededError,
 } from './guardrails.js';
 import { MockLLMProvider } from '../../gateway/mock.provider.js';

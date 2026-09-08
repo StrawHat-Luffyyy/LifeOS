@@ -4,7 +4,7 @@ import {
   type SemanticProjectContext,
 } from '../context/project-context.engine.js';
 
-export interface EvidenceItem extends ContinueProjectCitationDto {}
+export type EvidenceItem = ContinueProjectCitationDto;
 
 /**
  * Formats structured and semantic project context into a indexed evidence pool ([E1], [E2], ...) (OD-3).

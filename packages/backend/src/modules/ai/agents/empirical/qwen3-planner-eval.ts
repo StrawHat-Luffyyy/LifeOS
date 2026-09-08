@@ -1,3 +1,4 @@
+/* eslint-disable no-console */
 import { OllamaProvider } from '../../gateway/ollama.provider.js';
 import { enforcePlannerConstraints } from '../planner/planner-constraint.js';
 import { type PlannerRecommendationDto, type Priority } from '@lifeos/shared';
@@ -260,7 +261,7 @@ Analyze these tasks and return the ranked JSON recommendations now.`;
           jsonSuccessCount++;
         }
       }
-    } catch (e) {
+    } catch (_e) {
       validJson = false;
     }
 
@@ -350,7 +351,8 @@ Analyze these tasks and return the ranked JSON recommendations now.`;
   console.log(`Code Constraint Interventions: ${constraintFiredCount}`);
   console.log(`Guaranteed Final Unblocked #1: ${results.filter((r) => !r.finalRank1Blocked).length}/${SCENARIOS.length} (100%)`);
   console.log(`Average Latency: ${(results.reduce((acc, r) => acc + r.durationMs, 0) / SCENARIOS.length).toFixed(0)}ms`);
-  console.log(`Average Total Tokens: ${(results.reduce((acc, r) => acc + r.tokens.total, 0) / SCENARIOS.length).toFixed(0)} tokens\n`);
+  console.log(`Average Total Tokens: ${(results.reduce((acc, r) => acc + r.tokens.total, 0) / SCENARIOS.length).toFixed(0)} tokens`);
+  console.log(`Total Prompt Tokens: ${totalPromptTokens}, Total Completion Tokens: ${totalEvalTokens}\n`);
 
   console.log(JSON.stringify(results, null, 2));
 }

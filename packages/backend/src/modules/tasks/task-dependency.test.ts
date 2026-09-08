@@ -24,14 +24,12 @@ import * as taskRepo from './task.repository.js';
 import {
   addDependency,
   removeDependency,
-  getTaskDependencies,
   getTask,
 } from './task.service.js';
 import { ValidationError, ConflictError, NotFoundError } from '../../lib/errors.js';
 
 describe('Task Dependencies & Cycle Prevention (P4-1)', () => {
   const userId = 'user-1111-2222-3333-444444444444';
-  const otherUserId = 'user-9999-8888-7777-666666666666';
 
   const taskA = {
     id: 'task-a',

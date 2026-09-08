@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { api } from '@/lib/api';
-import { type PlannerOutputDto, type PlannerRecommendationDto, type ProjectDto } from '@lifeos/shared';
+import { type PlannerOutputDto, type ProjectDto } from '@lifeos/shared';
 
 interface PlannerViewProps {
   initialProjectId?: string | null;
@@ -25,19 +25,18 @@ export function PlannerView({ initialProjectId }: PlannerViewProps) {
   const [actionNotice, setActionNotice] = useState<string | null>(null);
 
   useEffect(() => {
-    loadProjects();
-  }, []);
-
-  async function loadProjects() {
-    try {
-      const res = await api.get<ProjectDto[]>('/api/projects');
-      if (res.data) {
+    let ignore = false;
+    api.get<ProjectDto[]>('/api/projects').then((res) => {
+      if (!ignore && res.data) {
         setProjects(res.data);
       }
-    } catch {
+    }).catch(() => {
       // Fallback
-    }
-  }
+    });
+    return () => {
+      ignore = true;
+    };
+  }, []);
 
   async function handleRunPlanner() {
     setLoading(true);
@@ -51,18 +50,18 @@ export function PlannerView({ initialProjectId }: PlannerViewProps) {
 
       if (res.data) {
         if (res.data.status && res.data.status !== 'completed') {
-          setError(`Planner run ended with status ${res.data.status}: ${res.data.error || 'Execution stopped'}`);
+          setError(`Planner run ended with status ${String(res.data.status)}: ${String(res.data.error || 'Execution stopped')}`);
         } else {
-          setOutput(res.data.output || res.data.result);
+          setOutput((res.data.output || res.data.result) as PlannerOutputDto);
         }
         setRunMetadata({
-          tokensUsed: res.data.tokensUsed || 0,
-          durationMs: res.data.durationMs || 0,
-          runId: res.data.runId || '',
+          tokensUsed: Number(res.data.tokensUsed) || 0,
+          durationMs: Number(res.data.durationMs) || 0,
+          runId: String(res.data.runId || ''),
         });
       }
-    } catch (err: any) {
-      setError(err.message || 'Failed to generate recommendations');
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Failed to generate recommendations');
     } finally {
       setLoading(false);
     }
@@ -73,8 +72,8 @@ export function PlannerView({ initialProjectId }: PlannerViewProps) {
       await api.acceptPlannerRecommendation(taskId, rationale);
       setAcceptedTaskIds((prev) => new Set([...prev, taskId]));
       setActionNotice(`Accepted & Started "${title}" — Task status updated to in-progress and logged to timeline.`);
-    } catch (err: any) {
-      setError(err.message || 'Failed to accept recommendation');
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Failed to accept recommendation');
     }
   }
 
@@ -83,8 +82,8 @@ export function PlannerView({ initialProjectId }: PlannerViewProps) {
       await api.rejectPlannerRecommendation(taskId, rationale);
       setRejectedTaskIds((prev) => new Set([...prev, taskId]));
       setActionNotice(`Logged rejection for "${title}" to Activity timeline.`);
-    } catch (err: any) {
-      setError(err.message || 'Failed to reject recommendation');
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Failed to reject recommendation');
     }
   }
 

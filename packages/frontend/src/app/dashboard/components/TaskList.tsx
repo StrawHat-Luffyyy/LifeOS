@@ -68,8 +68,8 @@ export function TaskList({
         await onRefreshTasks();
       }
       setSelectedTaskForDeps(null);
-    } catch (err: any) {
-      setDepError(err.message || 'Failed to add dependency');
+    } catch (err: unknown) {
+      setDepError(err instanceof Error ? err.message : 'Failed to add dependency');
     } finally {
       setDepLoading(false);
     }
@@ -85,8 +85,8 @@ export function TaskList({
         await onRefreshTasks();
       }
       setSelectedTaskForDeps(null);
-    } catch (err: any) {
-      setDepError(err.message || 'Failed to remove dependency');
+    } catch (err: unknown) {
+      setDepError(err instanceof Error ? err.message : 'Failed to remove dependency');
     } finally {
       setDepLoading(false);
     }

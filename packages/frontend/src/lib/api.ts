@@ -1,4 +1,10 @@
-import { type ApiResponse, type ApiErrorResponse, type RefreshTokenResponse } from '@lifeos/shared';
+import {
+  type ApiResponse,
+  type ApiErrorResponse,
+  type RefreshTokenResponse,
+  type AgentRunDto,
+  type TaskDto,
+} from '@lifeos/shared';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
 
@@ -186,11 +192,11 @@ class ApiClient {
   // ---------------------------------------------------------------------------
 
   async getTaskDependencies(taskId: string) {
-    return this.get<{ dependencies: any[]; dependents: any[] }>(`/api/tasks/${taskId}/dependencies`);
+    return this.get<{ dependencies: TaskDto[]; dependents: TaskDto[] }>(`/api/tasks/${taskId}/dependencies`);
   }
 
   async addTaskDependency(taskId: string, dependsOnTaskId: string) {
-    return this.post<any>(`/api/tasks/${taskId}/dependencies`, { dependsOnTaskId });
+    return this.post<{ success: boolean; dependency: unknown }>(`/api/tasks/${taskId}/dependencies`, { dependsOnTaskId });
   }
 
   async removeTaskDependency(taskId: string, dependsOnTaskId: string) {
@@ -202,7 +208,7 @@ class ApiClient {
   // ---------------------------------------------------------------------------
 
   async continueProject(projectId: string) {
-    return this.post<any>(`/api/projects/${projectId}/continue`);
+    return this.post<Record<string, unknown>>(`/api/projects/${projectId}/continue`);
   }
 
   // ---------------------------------------------------------------------------
@@ -210,15 +216,15 @@ class ApiClient {
   // ---------------------------------------------------------------------------
 
   async runPlanner(data?: { projectId?: string; focus?: string }) {
-    return this.post<any>('/api/planner', data || {});
+    return this.post<Record<string, unknown>>('/api/planner', data || {});
   }
 
   async acceptPlannerRecommendation(taskId: string, rationale?: string) {
-    return this.post<any>(`/api/planner/recommendations/${taskId}/accept`, { rationale });
+    return this.post<{ success: boolean; task: TaskDto }>(`/api/planner/recommendations/${taskId}/accept`, { rationale });
   }
 
   async rejectPlannerRecommendation(taskId: string, rationale?: string) {
-    return this.post<any>(`/api/planner/recommendations/${taskId}/reject`, { rationale });
+    return this.post<{ success: boolean }>(`/api/planner/recommendations/${taskId}/reject`, { rationale });
   }
 
   // ---------------------------------------------------------------------------
@@ -232,11 +238,11 @@ class ApiClient {
     if (params?.limit) query.set('limit', String(params.limit));
     if (params?.page) query.set('page', String(params.page));
     const qs = query.toString();
-    return this.get<any[]>(`/api/agent-runs${qs ? `?${qs}` : ''}`);
+    return this.get<AgentRunDto[]>(`/api/agent-runs${qs ? `?${qs}` : ''}`);
   }
 
   async getAgentRun(id: string) {
-    return this.get<any>(`/api/agent-runs/${id}`);
+    return this.get<AgentRunDto>(`/api/agent-runs/${id}`);
   }
 }
 

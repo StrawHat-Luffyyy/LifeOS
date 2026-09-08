@@ -157,7 +157,6 @@ Synthesize the Continue Project summary now. Follow the exact 6 section format. 
       const provider = getLLMProvider();
 
       // Turn 1: Initial synthesis
-      const tSynthStart = Date.now();
       let responseText = '';
       for await (const evt of guardrails.trackChat(provider, {
         messages: [
@@ -172,7 +171,7 @@ Synthesize the Continue Project summary now. Follow the exact 6 section format. 
       }
 
       // Citation validation (OD-3, B-4)
-      let validation = validateCitations(responseText, evidenceItems.length);
+      const validation = validateCitations(responseText, evidenceItems.length);
       let citationStatus: 'clean' | 'retried' | 'claim_stripped' = 'clean';
 
       // If invalid, retry ONCE with strict reminder (OD-3)
