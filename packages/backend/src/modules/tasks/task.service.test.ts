@@ -251,6 +251,8 @@ describe('TaskService', () => {
         createdAt: new Date(),
         updatedAt: new Date(),
         deletedAt: null,
+        githubIssueNumber: null,
+        githubIssueUrl: null,
       };
 
       vi.spyOn(taskRepo, 'findTaskByIdOrThrow').mockResolvedValue(mockTask);
@@ -299,6 +301,8 @@ describe('TaskService', () => {
         createdAt: new Date(),
         updatedAt: new Date(),
         deletedAt: new Date(),
+        githubIssueNumber: null,
+        githubIssueUrl: null,
       };
 
       vi.spyOn(taskRepo, 'softDeleteTask').mockResolvedValue(mockTask);

@@ -1,4 +1,4 @@
-import { pgTable, uuid, varchar, text, timestamp } from 'drizzle-orm/pg-core';
+import { pgTable, uuid, varchar, text, timestamp, integer } from 'drizzle-orm/pg-core';
 import { users } from './users.js';
 import { projects } from './projects.js';
 
@@ -13,6 +13,8 @@ export const tasks = pgTable('tasks', {
   userId: uuid('user_id')
     .notNull()
     .references(() => users.id),
+  githubIssueNumber: integer('github_issue_number'),
+  githubIssueUrl: text('github_issue_url'),
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
   updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
   deletedAt: timestamp('deleted_at', { withTimezone: true }),

@@ -126,6 +126,19 @@ export function ProjectSidebar({
             <span className="flex h-4 w-4 items-center justify-center text-purple-400 text-xs">🔍</span>
             <span>Agent Audit</span>
           </button>
+
+          <button
+            data-testid="sidebar-settings-btn"
+            onClick={() => onSelectScope("settings")}
+            className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors text-left ${
+              selectedScope === "settings"
+                ? "bg-indigo-600/20 text-indigo-300 border border-indigo-500/40"
+                : "text-gray-300 hover:bg-gray-800/60 hover:text-white"
+            }`}
+          >
+            <span className="flex h-4 w-4 items-center justify-center text-gray-400 text-xs">⚙️</span>
+            <span>Settings</span>
+          </button>
         </div>
       </div>
 

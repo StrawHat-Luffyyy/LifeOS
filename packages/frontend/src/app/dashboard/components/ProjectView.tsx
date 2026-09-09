@@ -12,6 +12,7 @@ import { TaskList } from "./TaskList";
 import { NoteList } from "./NoteList";
 import { ActivityFeed } from "./ActivityFeed";
 import { ContinueProjectModal } from "@/components/continue-project/ContinueProjectModal";
+import { GitHubTabView } from "./GitHubTabView";
 
 interface ProjectViewProps {
   project: ProjectDto;
@@ -27,6 +28,7 @@ interface ProjectViewProps {
   onToggleProjectStatus: (project: ProjectDto) => Promise<void>;
   onDeleteProject: (projectId: string) => Promise<void>;
   onOpenChat?: (projectId: string) => void;
+  onNavigateToSettings?: () => void;
   loading: boolean;
 }
 
@@ -44,9 +46,10 @@ export function ProjectView({
   onToggleProjectStatus,
   onDeleteProject,
   onOpenChat,
+  onNavigateToSettings,
   loading,
 }: ProjectViewProps) {
-  const [activeTab, setActiveTab] = useState<"tasks" | "notes" | "activity">("tasks");
+  const [activeTab, setActiveTab] = useState<"tasks" | "notes" | "activity" | "github">("tasks");
   const [isContinueModalOpen, setIsContinueModalOpen] = useState(false);
 
   return (
@@ -137,6 +140,16 @@ export function ProjectView({
           >
             Activity
           </button>
+          <button
+            onClick={() => setActiveTab("github")}
+            className={`pb-2 text-sm font-medium transition-colors border-b-2 flex items-center gap-1.5 ${
+              activeTab === "github"
+                ? "border-blue-500 text-blue-400"
+                : "border-transparent text-gray-400 hover:text-gray-200"
+            }`}
+          >
+            <span>🐙</span> GitHub
+          </button>
         </div>
       </div>
 
@@ -165,6 +178,13 @@ export function ProjectView({
 
       {activeTab === "activity" && (
         <ActivityFeed events={activity} loading={loading} />
+      )}
+
+      {activeTab === "github" && (
+        <GitHubTabView
+          projectId={project.id}
+          onNavigateToSettings={onNavigateToSettings}
+        />
       )}
 
       {/* Continue Project Modal (P4-3, OD-3) */}

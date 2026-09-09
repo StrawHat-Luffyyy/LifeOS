@@ -11,6 +11,7 @@ import {
 } from '@lifeos/shared';
 import * as projectController from './project.controller.js';
 import * as activityController from '../activity/activity.controller.js';
+import { githubRouter } from '../github/github.routes.js';
 
 const router: IRouter = Router();
 
@@ -59,5 +60,8 @@ router.post(
   validate(getProjectSchema),
   (req, res, next) => projectController.continueProject(req as AuthenticatedRequest, res, next),
 );
+
+// GitHub Integration (Phase 5a)
+router.use('/:id/github', githubRouter);
 
 export { router as projectRouter };

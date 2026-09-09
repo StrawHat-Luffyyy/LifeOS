@@ -160,6 +160,8 @@ export async function updateTask(
     if (input.priority !== undefined) updateData['priority'] = input.priority;
     if (input.status !== undefined) updateData['status'] = input.status;
     if (input.projectId !== undefined) updateData['projectId'] = input.projectId;
+    if (input.githubIssueNumber !== undefined) updateData['githubIssueNumber'] = input.githubIssueNumber;
+    if (input.githubIssueUrl !== undefined) updateData['githubIssueUrl'] = input.githubIssueUrl;
 
     const task = await taskRepo.updateTask(taskId, userId, updateData, tx);
 
@@ -389,6 +391,8 @@ function toTaskDto(row: {
   userId: string;
   createdAt: Date;
   updatedAt: Date;
+  githubIssueNumber?: number | null;
+  githubIssueUrl?: string | null;
 }): TaskDto {
   return {
     id: row.id,
@@ -399,6 +403,8 @@ function toTaskDto(row: {
     status: row.status as TaskDto['status'],
     projectId: row.projectId,
     userId: row.userId,
+    githubIssueNumber: row.githubIssueNumber ?? null,
+    githubIssueUrl: row.githubIssueUrl ?? null,
     createdAt: row.createdAt.toISOString(),
     updatedAt: row.updatedAt.toISOString(),
   };

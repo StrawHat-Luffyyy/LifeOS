@@ -43,6 +43,57 @@ export function TaskList({
   const [depLoading, setDepLoading] = useState<boolean>(false);
   const [depError, setDepError] = useState<string | null>(null);
 
+  // GitHub Issue Linking State (P5-4)
+  const [selectedTaskForIssue, setSelectedTaskForIssue] = useState<TaskDto | null>(null);
+  const [issueNumberInput, setIssueNumberInput] = useState('');
+  const [issueUrlInput, setIssueUrlInput] = useState('');
+  const [issueSaving, setIssueSaving] = useState(false);
+  const [issueError, setIssueError] = useState<string | null>(null);
+
+  function openIssueModal(task: TaskDto) {
+    setSelectedTaskForIssue(task);
+    setIssueNumberInput(task.githubIssueNumber ? String(task.githubIssueNumber) : '');
+    setIssueUrlInput(task.githubIssueUrl || '');
+    setIssueError(null);
+  }
+
+  async function handleSaveIssueLink(e: FormEvent) {
+    e.preventDefault();
+    if (!selectedTaskForIssue) return;
+    setIssueSaving(true);
+    setIssueError(null);
+    try {
+      const num = issueNumberInput.trim() ? parseInt(issueNumberInput.trim(), 10) : null;
+      const url = issueUrlInput.trim() || null;
+      await api.linkTaskToIssue(selectedTaskForIssue.id, num, url);
+      if (onRefreshTasks) {
+        await onRefreshTasks();
+      }
+      setSelectedTaskForIssue(null);
+    } catch (err: unknown) {
+      setIssueError(err instanceof Error ? err.message : 'Failed to link GitHub issue');
+    } finally {
+      setIssueSaving(false);
+    }
+  }
+
+  async function handleClearIssueLink() {
+    if (!selectedTaskForIssue) return;
+    setIssueSaving(true);
+    setIssueError(null);
+    try {
+      await api.linkTaskToIssue(selectedTaskForIssue.id, null, null);
+      if (onRefreshTasks) {
+        await onRefreshTasks();
+      }
+      setSelectedTaskForIssue(null);
+    } catch (err: unknown) {
+      setIssueError(err instanceof Error ? err.message : 'Failed to unlink GitHub issue');
+    } finally {
+      setIssueSaving(false);
+    }
+  }
+
   async function handleCreate(e: FormEvent) {
     e.preventDefault();
     if (!title.trim()) return;
@@ -198,6 +249,21 @@ export function TaskList({
                       ⚠️ Blocked by: {(task.blockedBy || []).join(', ') || 'Prerequisite'}
                     </span>
                   )}
+
+                  {/* GitHub Issue Badge (P5-4) */}
+                  {task.githubIssueNumber && (
+                    <a
+                      href={task.githubIssueUrl || '#'}
+                      target="_blank"
+                      rel="noreferrer noopener"
+                      title={task.githubIssueUrl ? `View GitHub Issue #${task.githubIssueNumber}` : `GitHub Issue #${task.githubIssueNumber}`}
+                      data-testid={`task-github-badge-${task.id}`}
+                      className="px-2 py-0.5 rounded text-[10px] font-mono font-semibold bg-indigo-950/80 text-indigo-300 border border-indigo-800/80 hover:bg-indigo-900 transition-colors flex items-center gap-1"
+                    >
+                      <span>🐙 #{task.githubIssueNumber}</span>
+                      <span className="text-[9px] opacity-70">↗</span>
+                    </a>
+                  )}
                 </div>
 
                 {currentProjectId === undefined && task.projectId && (
@@ -225,6 +291,23 @@ export function TaskList({
               >
                 <span>🔗</span>
                 <span className="text-[11px] hidden sm:inline">Deps</span>
+              </button>
+
+              {/* GitHub Issue Link Button (P5-4) */}
+              <button
+                onClick={() => openIssueModal(task)}
+                className={`text-xs px-2 py-1 rounded border transition-colors flex items-center gap-1 cursor-pointer ${
+                  task.githubIssueNumber
+                    ? 'bg-indigo-950/40 text-indigo-300 border-indigo-800/60 hover:bg-indigo-900/50'
+                    : 'bg-gray-800 hover:bg-gray-700 text-gray-400 hover:text-gray-200 border-gray-700'
+                }`}
+                title="Link or Unlink GitHub Issue (P5-4)"
+                data-testid={`link-issue-btn-${task.id}`}
+              >
+                <span>🐙</span>
+                <span className="text-[11px] hidden sm:inline">
+                  {task.githubIssueNumber ? `#${task.githubIssueNumber}` : 'Issue'}
+                </span>
               </button>
 
               {/* Delete button */}
@@ -347,6 +430,97 @@ export function TaskList({
                 Close
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* GitHub Issue Link Modal (P5-4) */}
+      {selectedTaskForIssue && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fade-in">
+          <div className="bg-zinc-900 border border-zinc-800 rounded-2xl shadow-2xl w-full max-w-md p-6 space-y-4 text-sm">
+            <div className="flex items-center justify-between border-b border-zinc-800 pb-3">
+              <h3 className="text-base font-bold text-zinc-100 flex items-center gap-2">
+                <span>🐙</span> Link GitHub Issue
+              </h3>
+              <button
+                onClick={() => setSelectedTaskForIssue(null)}
+                className="text-zinc-500 hover:text-zinc-300 text-lg leading-none cursor-pointer"
+              >
+                ×
+              </button>
+            </div>
+
+            <p className="text-xs text-zinc-400">
+              Link &ldquo;{selectedTaskForIssue.title}&rdquo; to a GitHub issue number and optional URL.
+            </p>
+
+            {issueError && (
+              <div className="rounded-lg border border-red-800 bg-red-900/30 p-2 text-xs text-red-300">
+                {issueError}
+              </div>
+            )}
+
+            <form onSubmit={handleSaveIssueLink} className="space-y-3">
+              <div>
+                <label className="block text-xs font-medium text-zinc-300 mb-1">
+                  Issue Number
+                </label>
+                <input
+                  type="number"
+                  min="1"
+                  value={issueNumberInput}
+                  onChange={(e) => setIssueNumberInput(e.target.value)}
+                  placeholder="e.g. 42"
+                  disabled={issueSaving}
+                  className="w-full rounded-lg border border-zinc-700 bg-zinc-800 px-3 py-1.5 text-xs text-zinc-100 placeholder-zinc-500 focus:outline-none focus:border-indigo-500"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-medium text-zinc-300 mb-1">
+                  Issue URL (Optional)
+                </label>
+                <input
+                  type="url"
+                  value={issueUrlInput}
+                  onChange={(e) => setIssueUrlInput(e.target.value)}
+                  placeholder="https://github.com/owner/repo/issues/42"
+                  disabled={issueSaving}
+                  className="w-full rounded-lg border border-zinc-700 bg-zinc-800 px-3 py-1.5 text-xs text-zinc-100 placeholder-zinc-500 focus:outline-none focus:border-indigo-500"
+                />
+              </div>
+
+              <div className="flex items-center justify-between pt-2">
+                {selectedTaskForIssue.githubIssueNumber ? (
+                  <button
+                    type="button"
+                    onClick={handleClearIssueLink}
+                    disabled={issueSaving}
+                    className="text-xs text-red-400 hover:text-red-300 underline cursor-pointer"
+                  >
+                    Unlink Issue
+                  </button>
+                ) : (
+                  <div />
+                )}
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setSelectedTaskForIssue(null)}
+                    className="px-3 py-1.5 text-xs rounded-lg border border-zinc-700 hover:bg-zinc-800 text-zinc-300 cursor-pointer"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={issueSaving}
+                    className="px-3 py-1.5 text-xs rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white font-medium shadow-sm disabled:opacity-50 cursor-pointer"
+                  >
+                    {issueSaving ? "Saving..." : "Save Link"}
+                  </button>
+                </div>
+              </div>
+            </form>
           </div>
         </div>
       )}

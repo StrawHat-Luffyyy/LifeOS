@@ -20,6 +20,7 @@ import { MemoryView } from "./components/MemoryView";
 import { DocumentManagerView } from "./components/DocumentManagerView";
 import { PlannerView } from "@/components/planner/PlannerView";
 import { AgentRunsView } from "@/components/agent-runs/AgentRunsView";
+import { SettingsView } from "./components/SettingsView";
 
 export default function DashboardPage() {
   const router = useRouter();
@@ -55,7 +56,8 @@ export default function DashboardPage() {
     selectedScope === "chat" ||
     selectedScope === "knowledge" ||
     selectedScope === "planner" ||
-    selectedScope === "agent-runs";
+    selectedScope === "agent-runs" ||
+    selectedScope === "settings";
   const isProjectScope = !isCustomView;
 
   const fetchTasks = useCallback(async () => {
@@ -418,6 +420,8 @@ export default function DashboardPage() {
               <PlannerView initialProjectId={null} />
             ) : selectedScope === "agent-runs" ? (
               <AgentRunsView />
+            ) : selectedScope === "settings" ? (
+              <SettingsView />
             ) : selectedProject ? (
               <ProjectView
                 project={selectedProject}
@@ -436,6 +440,7 @@ export default function DashboardPage() {
                   setChatProjectId(projectId);
                   setSelectedScope("chat");
                 }}
+                onNavigateToSettings={() => setSelectedScope("settings")}
                 loading={loading}
               />
             ) : (

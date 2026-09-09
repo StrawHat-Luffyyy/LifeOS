@@ -14,3 +14,5 @@ export { memories } from './memories.js';
 export { documents, documentVersions, documentChunks } from './documents.js';
 export { taskDependencies } from './task-dependencies.js';
 export { agentRuns } from './agent-runs.js';
+export { integrations } from './integrations.js';
+export { projectGithubLinks, githubIssues, githubPullRequests } from './github-data.js';

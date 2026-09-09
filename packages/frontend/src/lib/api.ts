@@ -4,6 +4,9 @@ import {
   type RefreshTokenResponse,
   type AgentRunDto,
   type TaskDto,
+  type IntegrationDto,
+  type ProjectGitHubLinkDto,
+  type ProjectGitHubDataDto,
 } from '@lifeos/shared';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
@@ -203,6 +206,17 @@ class ApiClient {
     return this.delete<{ success: boolean }>(`/api/tasks/${taskId}/dependencies/${dependsOnTaskId}`);
   }
 
+  async updateTask(taskId: string, input: Record<string, unknown>) {
+    return this.patch<TaskDto>(`/api/tasks/${taskId}`, input);
+  }
+
+  async linkTaskToIssue(taskId: string, githubIssueNumber: number | null, githubIssueUrl?: string | null) {
+    return this.patch<TaskDto>(`/api/tasks/${taskId}`, {
+      githubIssueNumber,
+      githubIssueUrl: githubIssueUrl ?? null,
+    });
+  }
+
   // ---------------------------------------------------------------------------
   // Phase 4: Continue Project (P4-3, OD-3)
   // ---------------------------------------------------------------------------
@@ -243,6 +257,43 @@ class ApiClient {
 
   async getAgentRun(id: string) {
     return this.get<AgentRunDto>(`/api/agent-runs/${id}`);
+  }
+
+  // ---------------------------------------------------------------------------
+  // Phase 5a: GitHub Integration (P5-1, P5-2, P5-3, P5-4)
+  // ---------------------------------------------------------------------------
+
+  async getGitHubConnection() {
+    return this.get<IntegrationDto | null>('/api/integrations/github');
+  }
+
+  async connectGitHub(token: string) {
+    return this.post<IntegrationDto>('/api/integrations/github/connect', { token });
+  }
+
+  async disconnectGitHub() {
+    return this.delete<{ disconnected: true }>('/api/integrations/github/disconnect');
+  }
+
+  async getProjectGitHub(projectId: string) {
+    return this.get<ProjectGitHubDataDto>(`/api/projects/${projectId}/github`);
+  }
+
+  async linkGitHubRepo(projectId: string, repoOwner: string, repoName: string) {
+    return this.post<ProjectGitHubLinkDto>(`/api/projects/${projectId}/github/link`, {
+      repoOwner,
+      repoName,
+    });
+  }
+
+  async unlinkGitHubRepo(projectId: string) {
+    return this.delete<{ unlinked: true }>(`/api/projects/${projectId}/github/link`);
+  }
+
+  async syncProjectGitHub(projectId: string) {
+    return this.post<{ syncedAt: string; issueCount: number; prCount: number }>(
+      `/api/projects/${projectId}/github/sync`,
+    );
   }
 }
 

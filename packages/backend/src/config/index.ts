@@ -21,6 +21,8 @@ const envSchema = z.object({
   LLM_PROVIDER: z.enum(['ollama', 'mock']).default('ollama'),
   EMBEDDING_PROVIDER: z.enum(['ollama', 'mock']).default('ollama'),
   UPLOAD_DIR: z.string().default('data/uploads'),
+  INTEGRATION_ENCRYPTION_KEY: z.string().length(64).optional(),
+  GITHUB_SYNC_INTERVAL_MINUTES: z.coerce.number().default(15),
 });
 
 const parsed = envSchema.safeParse(process.env);

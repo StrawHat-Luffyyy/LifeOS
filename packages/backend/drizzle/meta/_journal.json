@@ -43,6 +43,13 @@
       "when": 1788700000000,
       "tag": "0005_agentic_intelligence",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1788943872495,
+      "tag": "0006_solid_abomination",
+      "breakpoints": true
     }
   ]
 }

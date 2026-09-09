@@ -43,6 +43,8 @@ describe('Task Dependencies & Cycle Prevention (P4-1)', () => {
     createdAt: new Date(),
     updatedAt: new Date(),
     deletedAt: null,
+    githubIssueNumber: null,
+    githubIssueUrl: null,
   };
 
   const taskB = {
@@ -57,6 +59,8 @@ describe('Task Dependencies & Cycle Prevention (P4-1)', () => {
     createdAt: new Date(),
     updatedAt: new Date(),
     deletedAt: null,
+    githubIssueNumber: null,
+    githubIssueUrl: null,
   };
 
   const taskC = {
@@ -71,6 +75,8 @@ describe('Task Dependencies & Cycle Prevention (P4-1)', () => {
     createdAt: new Date(),
     updatedAt: new Date(),
     deletedAt: null,
+    githubIssueNumber: null,
+    githubIssueUrl: null,
   };
 
   beforeEach(() => {

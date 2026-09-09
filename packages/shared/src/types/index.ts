@@ -60,11 +60,16 @@ export const EVENT_TYPES = [
   'AGENT_EXECUTED',
   'PLANNER_RECOMMENDATION_ACCEPTED',
   'PLANNER_RECOMMENDATION_REJECTED',
+  'GITHUB_CONNECTED',
+  'GITHUB_DISCONNECTED',
+  'GITHUB_REPO_LINKED',
+  'GITHUB_REPO_UNLINKED',
+  'GITHUB_SYNC_COMPLETED',
 ] as const;
 export type EventType = (typeof EVENT_TYPES)[number];
 
 /** Entity types that activity events can reference. */
-export const ENTITY_TYPES = ['task', 'project', 'note', 'document', 'conversation', 'memory', 'agent_run'] as const;
+export const ENTITY_TYPES = ['task', 'project', 'note', 'document', 'conversation', 'memory', 'agent_run', 'integration'] as const;
 export type EntityType = (typeof ENTITY_TYPES)[number];
 
 // ---------------------------------------------------------------------------
@@ -139,6 +144,8 @@ export interface TaskDto {
   dependencies?: TaskDependencyDto[];
   blockedBy?: string[];
   isBlocked?: boolean;
+  githubIssueNumber?: number | null;
+  githubIssueUrl?: string | null;
 }
 
 // ---------------------------------------------------------------------------
@@ -455,6 +462,69 @@ export interface ContinueProjectSummaryDto {
   suggestedNextStep: string;
   citations: ContinueProjectCitationDto[];
   citationStatus: 'clean' | 'retried' | 'claim_stripped';
+}
+
+// ---------------------------------------------------------------------------
+// GitHub Integration DTOs (Phase 5a)
+// ---------------------------------------------------------------------------
+
+export interface IntegrationMetadata {
+  username?: string;
+  avatarUrl?: string;
+  [key: string]: unknown;
+}
+
+export interface IntegrationDto {
+  id: string;
+  userId: string;
+  provider: 'github';
+  metadata: IntegrationMetadata | null;
+  connectedAt: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface ProjectGitHubLinkDto {
+  id: string;
+  projectId: string;
+  userId: string;
+  repoOwner: string;
+  repoName: string;
+  repoUrl: string;
+  linkedAt: string;
+}
+
+export interface GitHubIssueDto {
+  id: string;
+  projectId: string;
+  userId: string;
+  number: number;
+  title: string;
+  state: 'open' | 'closed' | string;
+  url: string;
+  labels: string[];
+  author: string;
+  lastSyncedAt: string;
+}
+
+export interface GitHubPullRequestDto {
+  id: string;
+  projectId: string;
+  userId: string;
+  number: number;
+  title: string;
+  state: 'open' | 'closed' | string;
+  url: string;
+  author: string;
+  isDraft: boolean;
+  lastSyncedAt: string;
+}
+
+export interface ProjectGitHubDataDto {
+  link: ProjectGitHubLinkDto | null;
+  issues: GitHubIssueDto[];
+  pullRequests: GitHubPullRequestDto[];
+  lastSyncedAt?: string | null;
 }
 
 

@@ -38,6 +38,8 @@ export const updateTaskSchema = z.object({
       priority: z.enum(PRIORITIES).optional(),
       status: z.enum(TASK_STATUSES).optional(),
       projectId: z.string().uuid().nullable().optional(),
+      githubIssueNumber: z.number().int().positive().nullable().optional(),
+      githubIssueUrl: z.string().url().nullable().optional(),
     })
     .refine((data) => Object.keys(data).length > 0, {
       message: 'At least one field must be provided for update',
