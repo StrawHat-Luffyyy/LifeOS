@@ -141,6 +141,7 @@ export function ProjectView({
             Activity
           </button>
           <button
+            data-testid="project-github-tab-btn"
             onClick={() => setActiveTab("github")}
             className={`pb-2 text-sm font-medium transition-colors border-b-2 flex items-center gap-1.5 ${
               activeTab === "github"

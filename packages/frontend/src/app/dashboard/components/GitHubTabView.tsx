@@ -245,6 +245,7 @@ export function GitHubTabView({ projectId, onNavigateToSettings }: GitHubTabView
             <div className="flex items-center gap-3 pt-2">
               <button
                 type="submit"
+                data-testid="link-repo-btn"
                 disabled={linking || !repoOwner.trim() || !repoName.trim()}
                 className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg transition-colors shadow-sm"
               >
@@ -296,6 +297,7 @@ export function GitHubTabView({ projectId, onNavigateToSettings }: GitHubTabView
             <div className="flex items-center gap-2">
               <button
                 type="button"
+                data-testid="sync-now-btn"
                 onClick={handleManualSync}
                 disabled={syncing}
                 className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-gray-200 bg-gray-800 hover:bg-gray-700 border border-gray-700 rounded-lg transition-colors disabled:opacity-50"

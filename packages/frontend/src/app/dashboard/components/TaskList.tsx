@@ -468,6 +468,7 @@ export function TaskList({
                 <input
                   type="number"
                   min="1"
+                  data-testid="task-issue-number-input"
                   value={issueNumberInput}
                   onChange={(e) => setIssueNumberInput(e.target.value)}
                   placeholder="e.g. 42"
@@ -482,6 +483,7 @@ export function TaskList({
                 </label>
                 <input
                   type="url"
+                  data-testid="task-issue-url-input"
                   value={issueUrlInput}
                   onChange={(e) => setIssueUrlInput(e.target.value)}
                   placeholder="https://github.com/owner/repo/issues/42"
@@ -513,6 +515,7 @@ export function TaskList({
                   </button>
                   <button
                     type="submit"
+                    data-testid="task-issue-save-btn"
                     disabled={issueSaving}
                     className="px-3 py-1.5 text-xs rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white font-medium shadow-sm disabled:opacity-50 cursor-pointer"
                   >

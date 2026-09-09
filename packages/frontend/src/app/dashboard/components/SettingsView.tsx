@@ -182,6 +182,7 @@ export function SettingsView() {
               {!confirmDisconnect ? (
                 <button
                   type="button"
+                  data-testid="disconnect-github-btn"
                   onClick={() => setConfirmDisconnect(true)}
                   disabled={saving}
                   className="px-3 py-1.5 text-xs font-medium text-red-400 hover:text-red-300 bg-red-950/40 hover:bg-red-950/70 border border-red-900/60 rounded-md transition-colors"
@@ -192,6 +193,7 @@ export function SettingsView() {
                 <div className="flex items-center gap-2">
                   <button
                     type="button"
+                    data-testid="confirm-disconnect-btn"
                     onClick={handleDisconnect}
                     disabled={saving}
                     className="px-3 py-1.5 text-xs font-medium text-white bg-red-600 hover:bg-red-500 rounded-md transition-colors"
@@ -224,6 +226,7 @@ export function SettingsView() {
               <div className="relative">
                 <input
                   id="pat-input"
+                  data-testid="pat-input"
                   type={showToken ? "text" : "password"}
                   value={tokenInput}
                   onChange={(e) => setTokenInput(e.target.value)}
@@ -256,6 +259,7 @@ export function SettingsView() {
 
             <button
               type="submit"
+              data-testid="connect-github-btn"
               disabled={saving || !tokenInput.trim()}
               className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg transition-colors shadow-sm"
             >
