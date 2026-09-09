@@ -441,6 +441,7 @@ export default function DashboardPage() {
                   setSelectedScope("chat");
                 }}
                 onNavigateToSettings={() => setSelectedScope("settings")}
+                onRefreshTasks={fetchTasks}
                 loading={loading}
               />
             ) : (

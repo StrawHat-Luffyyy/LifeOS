@@ -34,6 +34,8 @@ vi.mock('./github-sync.repository.js', () => ({
   upsertPullRequests: vi.fn(),
   listIssuesByProjectId: vi.fn(),
   listPullRequestsByProjectId: vi.fn(),
+  pruneClosedIssues: vi.fn(),
+  pruneClosedPullRequests: vi.fn(),
 }));
 
 vi.mock('../projects/project.repository.js', () => ({
@@ -134,6 +136,17 @@ describe('GitHubSyncService', () => {
             isDraft: false,
           }),
         ]),
+        expect.anything(),
+      );
+
+      expect(syncRepoModule.pruneClosedIssues).toHaveBeenCalledWith(
+        projectId,
+        [1],
+        expect.anything(),
+      );
+      expect(syncRepoModule.pruneClosedPullRequests).toHaveBeenCalledWith(
+        projectId,
+        [2],
         expect.anything(),
       );
 

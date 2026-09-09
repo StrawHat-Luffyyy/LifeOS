@@ -1,4 +1,4 @@
-import { eq, desc } from 'drizzle-orm';
+import { eq, desc, and, notInArray } from 'drizzle-orm';
 import { db, type Database } from '../../db/index.js';
 import { githubIssues, githubPullRequests } from '../../db/schema/index.js';
 
@@ -117,4 +117,42 @@ export async function deletePullRequestsByProjectId(
   tx: Database = db,
 ): Promise<void> {
   await tx.delete(githubPullRequests).where(eq(githubPullRequests.projectId, projectId));
+}
+
+export async function pruneClosedIssues(
+  projectId: string,
+  currentOpenNumbers: number[],
+  tx: Database = db,
+): Promise<void> {
+  if (currentOpenNumbers.length === 0) {
+    await tx.delete(githubIssues).where(eq(githubIssues.projectId, projectId));
+  } else {
+    await tx
+      .delete(githubIssues)
+      .where(
+        and(
+          eq(githubIssues.projectId, projectId),
+          notInArray(githubIssues.number, currentOpenNumbers),
+        ),
+      );
+  }
+}
+
+export async function pruneClosedPullRequests(
+  projectId: string,
+  currentOpenNumbers: number[],
+  tx: Database = db,
+): Promise<void> {
+  if (currentOpenNumbers.length === 0) {
+    await tx.delete(githubPullRequests).where(eq(githubPullRequests.projectId, projectId));
+  } else {
+    await tx
+      .delete(githubPullRequests)
+      .where(
+        and(
+          eq(githubPullRequests.projectId, projectId),
+          notInArray(githubPullRequests.number, currentOpenNumbers),
+        ),
+      );
+  }
 }

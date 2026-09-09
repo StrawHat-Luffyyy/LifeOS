@@ -48,6 +48,7 @@ export function GitHubTabView({ projectId, onNavigateToSettings }: GitHubTabView
 
   useEffect(() => {
     let ignore = false;
+
     api.getProjectGitHub(projectId)
       .then((res) => {
         if (!ignore) {

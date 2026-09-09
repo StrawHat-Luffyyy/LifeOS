@@ -29,6 +29,7 @@ interface ProjectViewProps {
   onDeleteProject: (projectId: string) => Promise<void>;
   onOpenChat?: (projectId: string) => void;
   onNavigateToSettings?: () => void;
+  onRefreshTasks?: () => Promise<void>;
   loading: boolean;
 }
 
@@ -47,6 +48,7 @@ export function ProjectView({
   onDeleteProject,
   onOpenChat,
   onNavigateToSettings,
+  onRefreshTasks,
   loading,
 }: ProjectViewProps) {
   const [activeTab, setActiveTab] = useState<"tasks" | "notes" | "activity" | "github">("tasks");
@@ -162,6 +164,7 @@ export function ProjectView({
           onCreateTask={onCreateTask}
           onToggleStatus={onToggleTaskStatus}
           onDeleteTask={onDeleteTask}
+          onRefreshTasks={onRefreshTasks}
           loading={loading}
         />
       )}
@@ -183,6 +186,7 @@ export function ProjectView({
 
       {activeTab === "github" && (
         <GitHubTabView
+          key={project.id}
           projectId={project.id}
           onNavigateToSettings={onNavigateToSettings}
         />

@@ -22,6 +22,8 @@ export const createTaskSchema = z.object({
     priority: z.enum(PRIORITIES).default('medium'),
     status: z.enum(TASK_STATUSES).default('todo'),
     projectId: z.string().uuid('Invalid project ID').nullable().optional(),
+    githubIssueNumber: z.number().int().positive().nullable().optional(),
+    githubIssueUrl: z.string().url().nullable().optional(),
   }),
 });
 

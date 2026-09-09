@@ -35,6 +35,7 @@ export function TaskList({
   const [title, setTitle] = useState('');
   const [priority, setPriority] = useState<Priority>('medium');
   const [selectedProjectId, setSelectedProjectId] = useState<string>(currentProjectId || '');
+
   const [creating, setCreating] = useState(false);
 
   // Dependency Management Modal State

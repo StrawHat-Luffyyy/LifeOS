@@ -100,6 +100,7 @@ export async function syncLinkedRepo(
         tx,
       );
     }
+    await syncRepo.pruneClosedIssues(projectId, issues.map((i) => i.number), tx);
 
     if (prs.length > 0) {
       await syncRepo.upsertPullRequests(
@@ -117,6 +118,7 @@ export async function syncLinkedRepo(
         tx,
       );
     }
+    await syncRepo.pruneClosedPullRequests(projectId, prs.map((p) => p.number), tx);
 
     // 5. Append activity log with metadata.source: 'github_sync'
     await tx.insert(activityEvents).values({

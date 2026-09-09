@@ -43,6 +43,8 @@ export async function createTask(
         status: input.status,
         projectId: input.projectId ?? null,
         userId,
+        githubIssueNumber: input.githubIssueNumber ?? null,
+        githubIssueUrl: input.githubIssueUrl ?? null,
       },
       tx,
     );

@@ -1,3 +1,4 @@
+/* eslint-disable no-console */
 /**
  * Live GitHub Integration Verification Script (V5-1)
  *
@@ -24,8 +25,8 @@ async function main() {
   console.log('--- Step 1: Live PAT Validation against api.github.com/user ---');
   const user = await githubClient.validateToken(REAL_PAT);
   console.log('✓ Token validation SUCCEEDED against real GitHub API');
-  console.log('  GitHub Username  :', user.username);
-  console.log('  GitHub User ID   :', user.id);
+  console.log('  GitHub Login     :', user.login);
+  console.log('  GitHub Name      :', user.name ?? 'N/A');
   console.log('  GitHub Avatar URL:', user.avatarUrl);
   console.log();
 
@@ -52,9 +53,8 @@ async function main() {
   console.log('✓ Repository lookup SUCCEEDED against real GitHub API');
   console.log('  Full Name        :', repo.fullName);
   console.log('  HTML URL         :', repo.htmlUrl);
-  console.log('  Default Branch   :', repo.defaultBranch);
-  console.log('  Open Issues Count:', repo.openIssuesCount);
-  console.log('  Permissions      :', JSON.stringify(repo.permissions));
+  console.log('  Is Private       :', repo.isPrivate);
+  console.log('  Description      :', repo.description ?? 'None');
   console.log();
 
   // -------------------------------------------------------------------------
@@ -84,7 +84,7 @@ async function main() {
       'Accept': 'application/vnd.github.v3+json',
     },
   });
-  const rawItems: Array<{ number: number; title: string; pull_request?: object }> = await rawResponse.json();
+  const rawItems = (await rawResponse.json()) as Array<{ number: number; title: string; pull_request?: object }>;
 
   const totalRaw = rawItems.length;
   const rawIssuesOnly = rawItems.filter((i) => i.pull_request === undefined);
