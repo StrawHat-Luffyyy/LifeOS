@@ -11,6 +11,7 @@ export default defineConfig({
       DATABASE_URL: 'postgresql://lifeos:lifeos_dev@localhost:5432/lifeos_test',
       REDIS_URL: 'redis://localhost:6379',
       JWT_SECRET: 'test-secret-at-least-32-characters-long-12345',
+      INTEGRATION_ENCRYPTION_KEY: '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef',
       NODE_ENV: 'test',
     },
     coverage: {

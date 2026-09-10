@@ -43,6 +43,7 @@ jobs:
       JWT_SECRET: test-jwt-secret-at-least-32-characters-long-key
       JWT_EXPIRES_IN: 15m
       REFRESH_TOKEN_EXPIRES_IN_DAYS: 30
+      INTEGRATION_ENCRYPTION_KEY: 0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
       FRONTEND_URL: http://localhost:3000
       PORT: 4000
       LOG_LEVEL: error
