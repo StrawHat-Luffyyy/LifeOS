@@ -9,15 +9,21 @@ import { config } from '../config/index.js';
 import { githubClient } from '../lib/github-client.js';
 import { encryptToken, decryptToken } from '../lib/encryption.js';
 
-// Real PAT from environment/credential helper
-const REAL_PAT = 'REDACTED_TOKEN';
-const REPO_OWNER = 'StrawHat-Luffyyy';
-const REPO_NAME = 'LifeOS';
+// Read PAT and repository from environment variables
+const REAL_PAT = process.env['GITHUB_PAT'] || process.env['GITHUB_TOKEN'] || '';
+const REPO_OWNER = process.env['GITHUB_REPO_OWNER'] || 'StrawHat-Luffyyy';
+const REPO_NAME = process.env['GITHUB_REPO_NAME'] || 'LifeOS';
 
 async function main() {
   console.log('===============================================================');
   console.log('  LifeOS — Phase 5a Live GitHub Integration Verification (V5-1)');
   console.log('===============================================================\n');
+
+  if (!REAL_PAT) {
+    console.error('Error: GITHUB_PAT or GITHUB_TOKEN environment variable is required.');
+    console.error('Usage: GITHUB_PAT=your_token pnpm --filter @lifeos/backend verify:github:live');
+    process.exit(1);
+  }
 
   // -------------------------------------------------------------------------
   // 1. Live PAT Validation against GET /user
