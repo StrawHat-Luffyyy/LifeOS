@@ -96,7 +96,7 @@ export async function runMigrations(customDbUrl?: string): Promise<MigrationResu
 
   const dbUrl =
     customDbUrl ||
-    process.env.DATABASE_URL ||
+    process.env['DATABASE_URL'] ||
     'postgresql://lifeos:lifeos_dev@localhost:5432/lifeos';
 
   console.log('Connecting to database...');
