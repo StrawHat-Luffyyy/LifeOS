@@ -118,6 +118,24 @@ describe('GitHubClient', () => {
     expect(issues[0]!.labels).toEqual(['bug', 'enhancement']);
   });
 
+  it('listIssues requests open state by default', async () => {
+    const mockFetch = vi.fn().mockResolvedValue({
+      ok: true,
+      status: 200,
+      json: async () => [],
+    });
+
+    const client = new GitHubClient({ fetchFn: mockFetch as unknown as typeof fetch });
+    await client.listIssues(token, 'owner', 'repo');
+
+    expect(mockFetch).toHaveBeenCalledWith(
+      expect.stringContaining('/repos/owner/repo/issues?'),
+      expect.anything(),
+    );
+    const [url] = vi.mocked(mockFetch).mock.calls[0] as [string];
+    expect(url).toContain('state=open');
+  });
+
   it('listPullRequests maps draft and author information correctly', async () => {
     const mockFetch = vi.fn().mockResolvedValue({
       ok: true,
@@ -143,5 +161,23 @@ describe('GitHubClient', () => {
     expect(prs[0]!.title).toBe('feat: add github sync');
     expect(prs[0]!.author).toBe('luffy');
     expect(prs[0]!.isDraft).toBe(true);
+  });
+
+  it('listPullRequests requests open state by default', async () => {
+    const mockFetch = vi.fn().mockResolvedValue({
+      ok: true,
+      status: 200,
+      json: async () => [],
+    });
+
+    const client = new GitHubClient({ fetchFn: mockFetch as unknown as typeof fetch });
+    await client.listPullRequests(token, 'owner', 'repo');
+
+    expect(mockFetch).toHaveBeenCalledWith(
+      expect.stringContaining('/repos/owner/repo/pulls?'),
+      expect.anything(),
+    );
+    const [url] = vi.mocked(mockFetch).mock.calls[0] as [string];
+    expect(url).toContain('state=open');
   });
 });

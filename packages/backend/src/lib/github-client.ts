@@ -161,7 +161,7 @@ export class GitHubClient {
     const encodedOwner = encodeURIComponent(owner.trim());
     const encodedName = encodeURIComponent(name.trim());
     const params = new URLSearchParams();
-    params.set('state', options?.state ?? 'all');
+    params.set('state', options?.state ?? 'open');
     params.set('per_page', String(options?.perPage ?? 100));
     params.set('sort', 'updated');
     params.set('direction', 'desc');
@@ -228,7 +228,7 @@ export class GitHubClient {
     const encodedOwner = encodeURIComponent(owner.trim());
     const encodedName = encodeURIComponent(name.trim());
     const params = new URLSearchParams();
-    params.set('state', options?.state ?? 'all');
+    params.set('state', options?.state ?? 'open');
     params.set('per_page', String(options?.perPage ?? 100));
     params.set('sort', 'updated');
     params.set('direction', 'desc');
