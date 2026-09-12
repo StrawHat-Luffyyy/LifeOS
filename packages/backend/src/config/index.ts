@@ -23,6 +23,10 @@ const envSchema = z.object({
   UPLOAD_DIR: z.string().default('data/uploads'),
   INTEGRATION_ENCRYPTION_KEY: z.string().length(64).optional(),
   GITHUB_SYNC_INTERVAL_MINUTES: z.coerce.number().default(15),
+  GOOGLE_CLIENT_ID: z.string().optional(),
+  GOOGLE_CLIENT_SECRET: z.string().optional(),
+  GOOGLE_REDIRECT_URI: z.string().default('http://localhost:4000/api/integrations/google/callback'),
+  CALENDAR_SYNC_INTERVAL_MINUTES: z.coerce.number().default(15),
 });
 
 const parsed = envSchema.safeParse(process.env);

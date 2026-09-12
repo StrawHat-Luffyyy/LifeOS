@@ -19,6 +19,7 @@
     "db:push": "drizzle-kit push",
     "db:studio": "drizzle-kit studio",
     "ai:reembed": "tsx src/scripts/reembed.ts",
+    "verify:google:live": "tsx src/scripts/verify-google-live.ts",
     "clean": "rm -rf dist"
   },
   "dependencies": {

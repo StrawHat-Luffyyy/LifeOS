@@ -17,6 +17,7 @@ import { documentRouter } from './modules/documents/document.routes.js';
 import { agentRunRouter } from './modules/ai/agents/agent-runs/agent-run.routes.js';
 import { plannerRouter } from './modules/ai/agents/planner/planner.routes.js';
 import { integrationRouter } from './modules/integrations/integration.routes.js';
+import { calendarRouter } from './modules/calendar/calendar.routes.js';
 
 /**
  * Express application factory.
@@ -70,6 +71,7 @@ export function createApp(): express.Express {
   app.use('/api/agent-runs', agentRunRouter);
   app.use('/api/planner', plannerRouter);
   app.use('/api/integrations', integrationRouter);
+  app.use('/api/calendar', calendarRouter);
 
   // ---------------------------------------------------------------------------
   // Error handling (must be last)

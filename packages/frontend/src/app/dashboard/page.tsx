@@ -21,6 +21,7 @@ import { DocumentManagerView } from "./components/DocumentManagerView";
 import { PlannerView } from "@/components/planner/PlannerView";
 import { AgentRunsView } from "@/components/agent-runs/AgentRunsView";
 import { SettingsView } from "./components/SettingsView";
+import { CalendarView } from "./components/CalendarView";
 
 export default function DashboardPage() {
   const router = useRouter();
@@ -57,6 +58,7 @@ export default function DashboardPage() {
     selectedScope === "knowledge" ||
     selectedScope === "planner" ||
     selectedScope === "agent-runs" ||
+    selectedScope === "calendar" ||
     selectedScope === "settings";
   const isProjectScope = !isCustomView;
 
@@ -420,6 +422,8 @@ export default function DashboardPage() {
               <PlannerView initialProjectId={null} />
             ) : selectedScope === "agent-runs" ? (
               <AgentRunsView />
+            ) : selectedScope === "calendar" ? (
+              <CalendarView onGoToSettings={() => setSelectedScope("settings")} />
             ) : selectedScope === "settings" ? (
               <SettingsView />
             ) : selectedProject ? (

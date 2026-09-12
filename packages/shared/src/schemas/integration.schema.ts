@@ -11,6 +11,14 @@ export const connectGitHubSchema = z.object({
   }),
 });
 
+/** Schema for handling Google OAuth callback */
+export const googleOAuthCallbackSchema = z.object({
+  query: z.object({
+    code: z.string().min(1, 'Authorization code is required'),
+    state: z.string().min(1, 'State token is required'),
+  }),
+});
+
 /** Schema for linking a GitHub repository to a project. */
 export const linkRepoSchema = z.object({
   params: z.object({

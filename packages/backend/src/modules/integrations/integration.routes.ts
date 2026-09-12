@@ -6,9 +6,16 @@ import * as integrationController from './integration.controller.js';
 
 const router: IRouter = Router();
 
-// All integration endpoints require user authentication
+// Public callback for Google OAuth redirect
+router.get(
+  '/google/callback',
+  (req, res, next) => integrationController.googleCallback(req, res, next),
+);
+
+// All subsequent integration endpoints require user authentication
 router.use(authenticate);
 
+// GitHub endpoints
 router.post(
   '/github/connect',
   validate(connectGitHubSchema),
@@ -23,6 +30,22 @@ router.delete(
 router.get(
   '/github',
   (req, res, next) => integrationController.getConnection(req as AuthenticatedRequest, res, next),
+);
+
+// Google Calendar endpoints
+router.get(
+  '/google/auth-url',
+  (req, res, next) => integrationController.getGoogleAuthUrl(req as AuthenticatedRequest, res, next),
+);
+
+router.get(
+  '/google',
+  (req, res, next) => integrationController.getGoogleConnection(req as AuthenticatedRequest, res, next),
+);
+
+router.delete(
+  '/google/disconnect',
+  (req, res, next) => integrationController.disconnectGoogle(req as AuthenticatedRequest, res, next),
 );
 
 export { router as integrationRouter };

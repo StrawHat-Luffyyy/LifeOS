@@ -13,6 +13,8 @@ export default defineConfig({
       JWT_SECRET: 'test-secret-at-least-32-characters-long-12345',
       INTEGRATION_ENCRYPTION_KEY: '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef',
       NODE_ENV: 'test',
+      GOOGLE_CLIENT_ID: 'test-client-id',
+      GOOGLE_CLIENT_SECRET: 'test-client-secret',
     },
     coverage: {
       provider: 'v8',

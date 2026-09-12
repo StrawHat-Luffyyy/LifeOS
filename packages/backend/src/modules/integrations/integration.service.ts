@@ -120,7 +120,7 @@ export async function getConnection(userId: string): Promise<IntegrationDto | nu
  */
 export async function getDecryptedToken(userId: string): Promise<string> {
   const row = await integrationRepo.findByUserIdAndProvider(userId, 'github');
-  if (!row) {
+  if (!row || !row.encryptedToken || !row.iv || !row.authTag) {
     throw new NotFoundError('GitHub integration not connected');
   }
 

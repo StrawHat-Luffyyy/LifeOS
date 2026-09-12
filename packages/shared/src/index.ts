@@ -9,3 +9,4 @@ export * from './schemas/memory.schema.js';
 export * from './schemas/document.schema.js';
 export * from './schemas/agent.schema.js';
 export * from './schemas/integration.schema.js';
+export * from './schemas/calendar.schema.js';

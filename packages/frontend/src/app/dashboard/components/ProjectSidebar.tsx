@@ -128,6 +128,19 @@ export function ProjectSidebar({
           </button>
 
           <button
+            data-testid="sidebar-calendar-btn"
+            onClick={() => onSelectScope("calendar")}
+            className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors text-left ${
+              selectedScope === "calendar"
+                ? "bg-blue-600/20 text-blue-300 border border-blue-500/40"
+                : "text-gray-300 hover:bg-gray-800/60 hover:text-white"
+            }`}
+          >
+            <span className="flex h-4 w-4 items-center justify-center text-blue-400 text-xs">📅</span>
+            <span>Upcoming Calendar</span>
+          </button>
+
+          <button
             data-testid="sidebar-settings-btn"
             onClick={() => onSelectScope("settings")}
             className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors text-left ${

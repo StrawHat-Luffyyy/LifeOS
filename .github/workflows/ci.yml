@@ -44,6 +44,8 @@ jobs:
       JWT_EXPIRES_IN: 15m
       REFRESH_TOKEN_EXPIRES_IN_DAYS: 30
       INTEGRATION_ENCRYPTION_KEY: 0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+      GOOGLE_CLIENT_ID: test-google-client-id
+      GOOGLE_CLIENT_SECRET: test-google-client-secret
       FRONTEND_URL: http://localhost:3000
       PORT: 4000
       LOG_LEVEL: error

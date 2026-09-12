@@ -16,3 +16,4 @@ export { taskDependencies } from './task-dependencies.js';
 export { agentRuns } from './agent-runs.js';
 export { integrations } from './integrations.js';
 export { projectGithubLinks, githubIssues, githubPullRequests } from './github-data.js';
+export { calendarEvents } from './calendar-events.js';

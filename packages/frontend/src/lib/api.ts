@@ -7,6 +7,7 @@ import {
   type IntegrationDto,
   type ProjectGitHubLinkDto,
   type ProjectGitHubDataDto,
+  type CalendarEventDto,
 } from '@lifeos/shared';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
@@ -293,6 +294,36 @@ class ApiClient {
   async syncProjectGitHub(projectId: string) {
     return this.post<{ syncedAt: string; issueCount: number; prCount: number }>(
       `/api/projects/${projectId}/github/sync`,
+    );
+  }
+
+  // ---------------------------------------------------------------------------
+  // Phase 5b: Google Calendar Integration (P5b-1, P5b-2, P5b-3)
+  // ---------------------------------------------------------------------------
+
+  async getGoogleConnection() {
+    return this.get<IntegrationDto | null>('/api/integrations/google');
+  }
+
+  async getGoogleAuthUrl() {
+    return this.get<{ url: string }>('/api/integrations/google/auth-url');
+  }
+
+  async disconnectGoogle() {
+    return this.delete<{ disconnected: true }>('/api/integrations/google/disconnect');
+  }
+
+  async getCalendarEvents(timeMin?: string, timeMax?: string) {
+    const params = new URLSearchParams();
+    if (timeMin) params.set('timeMin', timeMin);
+    if (timeMax) params.set('timeMax', timeMax);
+    const qs = params.toString() ? `?${params.toString()}` : '';
+    return this.get<CalendarEventDto[]>(`/api/calendar/events${qs}`);
+  }
+
+  async syncCalendar() {
+    return this.post<{ added: number; updated: number; pruned: number; total: number }>(
+      '/api/calendar/sync',
     );
   }
 }

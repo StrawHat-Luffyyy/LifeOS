@@ -65,11 +65,14 @@ export const EVENT_TYPES = [
   'GITHUB_REPO_LINKED',
   'GITHUB_REPO_UNLINKED',
   'GITHUB_SYNC_COMPLETED',
+  'GOOGLE_CALENDAR_CONNECTED',
+  'GOOGLE_CALENDAR_DISCONNECTED',
+  'CALENDAR_SYNC_COMPLETED',
 ] as const;
 export type EventType = (typeof EVENT_TYPES)[number];
 
 /** Entity types that activity events can reference. */
-export const ENTITY_TYPES = ['task', 'project', 'note', 'document', 'conversation', 'memory', 'agent_run', 'integration'] as const;
+export const ENTITY_TYPES = ['task', 'project', 'note', 'document', 'conversation', 'memory', 'agent_run', 'integration', 'calendar_event'] as const;
 export type EntityType = (typeof ENTITY_TYPES)[number];
 
 // ---------------------------------------------------------------------------
@@ -471,17 +474,31 @@ export interface ContinueProjectSummaryDto {
 export interface IntegrationMetadata {
   username?: string;
   avatarUrl?: string;
+  name?: string;
+  email?: string;
   [key: string]: unknown;
 }
 
 export interface IntegrationDto {
   id: string;
   userId: string;
-  provider: 'github';
+  provider: 'github' | 'google';
   metadata: IntegrationMetadata | null;
   connectedAt: string;
   createdAt: string;
   updatedAt: string;
+}
+
+export interface CalendarEventDto {
+  id: string;
+  userId: string;
+  googleEventId: string;
+  summary: string;
+  startTime: string;
+  endTime: string;
+  location?: string | null;
+  htmlLink?: string | null;
+  lastSyncedAt: string;
 }
 
 export interface ProjectGitHubLinkDto {

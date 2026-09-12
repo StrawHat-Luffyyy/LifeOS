@@ -5,41 +5,62 @@ import { type IntegrationDto } from "@lifeos/shared";
 import { api, ApiError } from "@/lib/api";
 
 export function SettingsView() {
-  const [connection, setConnection] = useState<IntegrationDto | null>(null);
+  const [githubConnection, setGithubConnection] = useState<IntegrationDto | null>(null);
+  const [googleConnection, setGoogleConnection] = useState<IntegrationDto | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [googleConnecting, setGoogleConnecting] = useState(false);
   const [tokenInput, setTokenInput] = useState("");
   const [showToken, setShowToken] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [success, setSuccess] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(() => {
+    if (typeof window !== "undefined") {
+      const urlParams = new URLSearchParams(window.location.search);
+      if (urlParams.get("integration") === "google" && urlParams.get("status") === "error") {
+        return urlParams.get("message") || "Failed to connect Google Calendar. Please try again.";
+      }
+    }
+    return null;
+  });
+  const [success, setSuccess] = useState<string | null>(() => {
+    if (typeof window !== "undefined") {
+      const urlParams = new URLSearchParams(window.location.search);
+      if (urlParams.get("integration") === "google" && urlParams.get("status") === "success") {
+        return "Google Calendar connected successfully!";
+      }
+    }
+    return null;
+  });
   const [confirmDisconnect, setConfirmDisconnect] = useState(false);
+  const [confirmGoogleDisconnect, setConfirmGoogleDisconnect] = useState(false);
 
   useEffect(() => {
     let ignore = false;
-    api.getGitHubConnection()
-      .then((res) => {
-        if (!ignore) {
-          setConnection(res.data);
-          setLoading(false);
-        }
-      })
-      .catch((err) => {
-        if (!ignore) {
-          if (err instanceof ApiError) {
-            setError(err.message);
-          } else {
-            setError("Failed to fetch GitHub connection status");
-          }
-          setLoading(false);
-        }
-      });
+
+    // Clean URL parameters returned from OAuth callback
+    if (typeof window !== "undefined") {
+      const urlParams = new URLSearchParams(window.location.search);
+      if (urlParams.get("integration") === "google") {
+        window.history.replaceState({}, document.title, window.location.pathname);
+      }
+    }
+
+    Promise.all([
+      api.getGitHubConnection().then((res) => res.data).catch(() => null),
+      api.getGoogleConnection().then((res) => res.data).catch(() => null),
+    ]).then(([gh, google]) => {
+      if (!ignore) {
+        setGithubConnection(gh);
+        setGoogleConnection(google);
+        setLoading(false);
+      }
+    });
 
     return () => {
       ignore = true;
     };
   }, []);
 
-  async function handleConnect(e: React.FormEvent) {
+  async function handleConnectGitHub(e: React.FormEvent) {
     e.preventDefault();
     if (!tokenInput.trim()) {
       setError("Please provide a Personal Access Token");
@@ -51,7 +72,7 @@ export function SettingsView() {
     setSuccess(null);
     try {
       const res = await api.connectGitHub(tokenInput.trim());
-      setConnection(res.data);
+      setGithubConnection(res.data);
       setTokenInput("");
       setSuccess("GitHub account connected successfully!");
     } catch (err) {
@@ -65,13 +86,13 @@ export function SettingsView() {
     }
   }
 
-  async function handleDisconnect() {
+  async function handleDisconnectGitHub() {
     setSaving(true);
     setError(null);
     setSuccess(null);
     try {
       await api.disconnectGitHub();
-      setConnection(null);
+      setGithubConnection(null);
       setConfirmDisconnect(false);
       setSuccess("GitHub account disconnected.");
     } catch (err) {
@@ -79,6 +100,47 @@ export function SettingsView() {
         setError(err.message);
       } else {
         setError("Failed to disconnect GitHub.");
+      }
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function handleConnectGoogle() {
+    setGoogleConnecting(true);
+    setError(null);
+    setSuccess(null);
+    try {
+      const res = await api.getGoogleAuthUrl();
+      if (res.data?.url) {
+        window.location.href = res.data.url;
+      } else {
+        throw new Error("Missing authorization URL from server");
+      }
+    } catch (err) {
+      if (err instanceof ApiError) {
+        setError(err.message);
+      } else {
+        setError("Failed to start Google OAuth flow. Please ensure GOOGLE_CLIENT_ID is configured.");
+      }
+      setGoogleConnecting(false);
+    }
+  }
+
+  async function handleDisconnectGoogle() {
+    setSaving(true);
+    setError(null);
+    setSuccess(null);
+    try {
+      await api.disconnectGoogle();
+      setGoogleConnection(null);
+      setConfirmGoogleDisconnect(false);
+      setSuccess("Google Calendar disconnected.");
+    } catch (err) {
+      if (err instanceof ApiError) {
+        setError(err.message);
+      } else {
+        setError("Failed to disconnect Google Calendar.");
       }
     } finally {
       setSaving(false);
@@ -122,7 +184,112 @@ export function SettingsView() {
         </div>
       )}
 
-      {/* GitHub Integration Card */}
+      {/* Google Calendar Integration Card (Phase 5b) */}
+      <div className="rounded-xl border border-gray-800 bg-gray-900/60 p-6 backdrop-blur-sm space-y-5">
+        <div className="flex items-start justify-between">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-lg bg-blue-950/60 border border-blue-800/60 flex items-center justify-center text-xl">
+              📅
+            </div>
+            <div>
+              <h3 className="text-lg font-semibold text-gray-100">Google Calendar (Read-Only)</h3>
+              <p className="text-xs text-gray-400">
+                Sync upcoming events from your primary Google Calendar to LifeOS.
+              </p>
+            </div>
+          </div>
+          {loading ? (
+            <span className="text-xs text-gray-500">Checking...</span>
+          ) : googleConnection ? (
+            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-emerald-950 text-emerald-300 border border-emerald-800">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+              Connected
+            </span>
+          ) : (
+            <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-gray-800 text-gray-400 border border-gray-700">
+              Not Connected
+            </span>
+          )}
+        </div>
+
+        {loading ? (
+          <div className="py-6 text-center text-sm text-gray-500">Loading integration status...</div>
+        ) : googleConnection ? (
+          /* Connected State */
+          <div className="space-y-4 pt-2 border-t border-gray-800">
+            <div className="flex items-center justify-between bg-gray-800/50 rounded-lg p-4 border border-gray-800">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-full bg-blue-600/20 border border-blue-500/40 flex items-center justify-center text-sm font-semibold text-blue-300">
+                  📅
+                </div>
+                <div>
+                  <div className="text-sm font-medium text-gray-200">
+                    {googleConnection.metadata?.email || "Google Account"}
+                  </div>
+                  <div className="text-xs text-gray-500">
+                    Connected on {new Date(googleConnection.connectedAt).toLocaleDateString()}
+                  </div>
+                </div>
+              </div>
+
+              {!confirmGoogleDisconnect ? (
+                <button
+                  type="button"
+                  data-testid="disconnect-google-btn"
+                  onClick={() => setConfirmGoogleDisconnect(true)}
+                  disabled={saving}
+                  className="px-3 py-1.5 text-xs font-medium text-red-400 hover:text-red-300 bg-red-950/40 hover:bg-red-950/70 border border-red-900/60 rounded-md transition-colors"
+                >
+                  Disconnect
+                </button>
+              ) : (
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    data-testid="confirm-disconnect-google-btn"
+                    onClick={handleDisconnectGoogle}
+                    disabled={saving}
+                    className="px-3 py-1.5 text-xs font-medium text-white bg-red-600 hover:bg-red-500 rounded-md transition-colors"
+                  >
+                    {saving ? "Disconnecting..." : "Confirm Disconnect"}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setConfirmGoogleDisconnect(false)}
+                    className="px-2 py-1.5 text-xs font-medium text-gray-400 hover:text-gray-200 rounded-md transition-colors"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              )}
+            </div>
+
+            <div className="text-xs text-gray-500 flex items-center gap-1.5">
+              <span>🔒</span>
+              <span>OAuth tokens are encrypted at rest with AES-256-GCM. Scoped to read-only calendar access.</span>
+            </div>
+          </div>
+        ) : (
+          /* Disconnected State */
+          <div className="space-y-4 pt-2 border-t border-gray-800">
+            <p className="text-sm text-gray-400">
+              Connect your Google account using secure OAuth 2.0 to sync events for a rolling 14-day window.
+            </p>
+            <button
+              type="button"
+              data-testid="connect-google-btn"
+              onClick={handleConnectGoogle}
+              disabled={googleConnecting}
+              className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-500 disabled:opacity-50 rounded-lg transition-colors shadow-sm"
+            >
+              <span>📅</span>
+              <span>{googleConnecting ? "Connecting to Google..." : "Connect Google Calendar"}</span>
+            </button>
+          </div>
+        )}
+      </div>
+
+      {/* GitHub Integration Card (Phase 5a) */}
       <div className="rounded-xl border border-gray-800 bg-gray-900/60 p-6 backdrop-blur-sm space-y-5">
         <div className="flex items-start justify-between">
           <div className="flex items-center gap-3">
@@ -138,7 +305,7 @@ export function SettingsView() {
           </div>
           {loading ? (
             <span className="text-xs text-gray-500">Checking...</span>
-          ) : connection ? (
+          ) : githubConnection ? (
             <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-emerald-950 text-emerald-300 border border-emerald-800">
               <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
               Connected
@@ -151,30 +318,30 @@ export function SettingsView() {
         </div>
 
         {loading ? (
-          <div className="py-8 text-center text-sm text-gray-500">Loading integration details...</div>
-        ) : connection ? (
+          <div className="py-6 text-center text-sm text-gray-500">Loading integration details...</div>
+        ) : githubConnection ? (
           /* Connected State */
           <div className="space-y-4 pt-2 border-t border-gray-800">
             <div className="flex items-center justify-between bg-gray-800/50 rounded-lg p-4 border border-gray-800">
               <div className="flex items-center gap-3">
-                {connection.metadata?.avatarUrl ? (
+                {githubConnection.metadata?.avatarUrl ? (
                   /* eslint-disable-next-line @next/next/no-img-element */
                   <img
-                    src={connection.metadata.avatarUrl as string}
+                    src={githubConnection.metadata.avatarUrl as string}
                     alt="GitHub avatar"
                     className="w-10 h-10 rounded-full border border-gray-700"
                   />
                 ) : (
                   <div className="w-10 h-10 rounded-full bg-gray-700 flex items-center justify-center text-sm font-semibold text-gray-200">
-                    {(connection.metadata?.username as string || "GH")[0].toUpperCase()}
+                    {((githubConnection.metadata?.username as string) || "GH")[0].toUpperCase()}
                   </div>
                 )}
                 <div>
                   <div className="text-sm font-medium text-gray-200">
-                    @{connection.metadata?.username || "Unknown"}
+                    @{githubConnection.metadata?.username || "Unknown"}
                   </div>
                   <div className="text-xs text-gray-500">
-                    Connected on {new Date(connection.connectedAt).toLocaleDateString()}
+                    Connected on {new Date(githubConnection.connectedAt).toLocaleDateString()}
                   </div>
                 </div>
               </div>
@@ -194,7 +361,7 @@ export function SettingsView() {
                   <button
                     type="button"
                     data-testid="confirm-disconnect-btn"
-                    onClick={handleDisconnect}
+                    onClick={handleDisconnectGitHub}
                     disabled={saving}
                     className="px-3 py-1.5 text-xs font-medium text-white bg-red-600 hover:bg-red-500 rounded-md transition-colors"
                   >
@@ -218,7 +385,7 @@ export function SettingsView() {
           </div>
         ) : (
           /* Disconnected State — Connect Form */
-          <form onSubmit={handleConnect} className="space-y-4 pt-2 border-t border-gray-800">
+          <form onSubmit={handleConnectGitHub} className="space-y-4 pt-2 border-t border-gray-800">
             <div>
               <label htmlFor="pat-input" className="block text-xs font-medium text-gray-300 mb-1.5">
                 Personal Access Token (Classic or Fine-Grained)
