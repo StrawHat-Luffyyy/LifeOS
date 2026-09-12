@@ -4,76 +4,47 @@ A persistent, context-aware personal operating system that stores structured kno
 
 ---
 
-## Current Status: Phase 0, Phase 1, Phase 2, & Phase 3 Complete
+## Current Status: Phase 0 Through Phase 5b Complete
 
-LifeOS has completed **Phase 0 (Foundation & Hardening)**, **Phase 1 (Productivity Core)**, **Phase 2 (AI Foundation)**, and **Phase 3 (Memory & Knowledge)** with verified multi-tenant isolation, a 148-test automated test suite, live browser recording validation, real live-model Ollama evaluation, and an automated GitHub Actions CI pipeline.
+LifeOS has completed **Phase 0 (Foundation & Hardening)**, **Phase 1 (Productivity Core)**, **Phase 2 (AI Foundation)**, **Phase 3 (Memory & Knowledge)**, **Phase 4 (Agentic Intelligence)**, and **Phase 5 (Read-Only Integrations: 5a GitHub & 5b Google Calendar)** with verified multi-tenant isolation, **258 automated tests across 38 test suites**, zero lint/typecheck errors, Next.js Turbopack production builds, and an automated GitHub Actions CI pipeline.
 
 ### What's Implemented & Verified
 
-- **Embedding Gateway & Model Versioning (OD-6, P3-1, P3-2):**
-  - Concrete Ollama embedding provider targeting `nomic-embed-text` (768 dimensions) with explicit `num_ctx: 8192` context window.
-  - Model version tagging (`embedding_model`) on all vector rows with a zero-downtime batch re-embedding CLI script (`pnpm --filter @lifeos/backend ai:reembed`).
-  - Mock embedding provider for lightning-fast deterministic test suites.
-- **Notes Semantic & Hybrid Search (FR-NOTE-3, P3-3):**
-  - Synchronous 768-dimensional embedding generation on note create/update.
-  - Hybrid search combining PostgreSQL Full-Text Search (`ts_rank`) with vector cosine distance (`<=>` operator) via Reciprocal Rank Fusion (RRF, $k=60$).
-- **Explicit Memory Bank & Conflict Resolution (OD-2, FR-MEM, P3-4):**
-  - Dedicated `memories` table supporting 4 categories: `fact`, `decision`, `preference`, and `goal`.
-  - Non-destructive conflict resolution: new memories with cosine similarity $\ge 0.90$ automatically mark prior active memories as `superseded_by = newMemory.id`, preserving provenance without deleting knowledge.
-  - Dedicated UI view in dashboard with category filtering, include-superseded toggle, and creation modal.
-- **Asynchronous Document Ingestion Pipeline (FR-DOC, P3-5):**
-  - File upload supporting Markdown, Plain Text, and PDF via Multer.
-  - Robust paragraph-aware chunker (~500–800 tokens, 15% sliding token overlap) preserving semantic boundaries.
-  - BullMQ job queue backed by Redis with background worker generating embeddings and storing chunk vectors in PostgreSQL.
-  - Document versions tracking (`document_versions`, `document_chunks`) and interactive Chunk Inspector modal in the frontend.
-- **Unified RAG Retrieval Service & Anti-Hallucination Guardrail (OD-1, FR-RAG, FR-RAG-5, P3-6):**
-  - `HybridRetrievalService` querying across Notes, Document Chunks, and Memories simultaneously with RRF score fusion.
-  - Deterministic `searchMemory` tool (`READ_ONLY` risk tier) integrated into the AI agent tool loop.
-  - Strict system prompt anti-hallucination compliance (FR-RAG-5): if retrieved context lacks the answer, the assistant must explicitly answer *"I don't have that information in your notes or documents."*
-  - Interactive chat evidence: tool calls render collapsible knowledge citation cards with provenance metadata, snippet previews, and RRF relevance score badges.
-- **Provider-Agnostic LLM Gateway (FR-CHAT-3, A-1):**
-  - Internal `LLMProvider` abstraction allowing seamless provider switches without altering business services or controllers.
-  - Production Ollama provider targeting local `qwen3:8b` via `http://127.0.0.1:11434` with temperature `0.15`.
-  - **CoT Suppression (FR-OBS-2):** Explicit `think: false` combined with `StreamThinkingFilter` to parse and strip `<think>...</think>` tokens in-stream, ensuring raw reasoning is never leaked to the client.
-- **Deterministic Scoped Tool Registry & Loop (FR-SAFE-1, FR-SAFE-3, A-2):**
-  - Typed full `RiskTier = 'READ_ONLY' | 'WRITE' | 'DESTRUCTIVE' | 'EXTERNAL'` in `@lifeos/shared`.
-  - 5 deterministic tools: `createTask` (`WRITE`), `createNote` (`WRITE`), `updateTaskStatus` (`WRITE`), `getProjectContext` (`READ_ONLY`), and `searchMemory` (`READ_ONLY`).
-  - Safe multi-turn loop with strict **max 5 tool calls per turn** guardrail preventing runaway execution.
-- **AI-Initiated Activity Tagging (PP-7, A-3):**
-  - Domain mutations via tool execution forward `{ source: 'ai', conversationId }` context.
-  - Persisted in `activity_events.metadata` at the database level.
-  - Displayed with a prominent purple **`AI`** badge in the project and global Activity feeds.
-- **Conversation & Message Persistence (FR-CHAT-1, FR-CHAT-2, A-4):**
-  - User-scoped PostgreSQL tables: `conversations`, `messages`, and `tool_calls` audit log.
-  - Strict 404 tenant isolation: attempting to link a conversation to a foreign project or query foreign conversation data returns `404 NOT_FOUND`.
-  - Mid-stream disconnect resilience: partial assistant messages persisted with `status: 'interrupted'` on client abort.
-- **Real-Time Streaming Chat UI (P2-5):**
-  - Interactive Next.js 16 chat view with conversation sidebar switcher and project context filter.
-  - Incremental Server-Sent Events (SSE) token stream parser.
-  - In-stream `ToolActivityCard` showing tool name, risk tier badge, expandable inputs/results, and collapsible search evidence.
-  - "Ask Project AI" trigger in the project header.
-- **Dual-Token Authentication & Sessions (FR-AUTH-1..5):**
-  - Short-lived 15-minute access token (JWT) verified purely via signature with zero database overhead.
-  - Long-lived 30-day revocable refresh token (SHA-256 hashed in PostgreSQL) with automatic token rotation on `POST /api/auth/refresh`.
-  - Server-side session revocation on `POST /api/auth/logout`.
-  - Rate limiting on `/api/auth/*` (20 requests per 15-minute window per IP) returning `429 Too Many Requests`.
-- **Projects Module (FR-PROJ-1..4):**
-  - Full CRUD with lifecycle statuses (`active`, `archived`).
-  - Transactional activity logging emitting `PROJECT_CREATED`, `PROJECT_UPDATED`, `PROJECT_STATUS_CHANGED`, and `PROJECT_DELETED`.
-- **Task Management with Project Linking (FR-TASK-1..4):**
-  - Priority levels (`low`, `medium`, `high`, `urgent`), statuses (`todo`, `in_progress`, `done`).
-  - Strict cross-tenant project validation: linking a task to a non-existent or foreign project rejects with `404 NOT_FOUND`.
-  - Transactional activity logging (`TASK_CREATED`, `TASK_STATUS_CHANGED`, `TASK_DELETED`).
-- **Notes with Hybrid Search (FR-NOTE-1..4):**
-  - Markdown note content with tag arrays (`tags: text[]`).
-  - Hybrid search combining generated `search_vector tsvector` GIN indexing with 768-dim vector embeddings via RRF.
-  - Transactional activity logging (`NOTE_CREATED`, `NOTE_UPDATED`, `NOTE_DELETED`).
-- **Activity Timeline API (FR-ACT-1..4):**
-  - Append-only event store capturing user and project lifecycle events chronologically.
-  - Endpoints for global timeline (`GET /api/activity`) and project timeline (`GET /api/projects/:id/activity`).
+- **Read-Only Google Calendar Integration (Phase 5b):**
+  - Standard Google OAuth 2.0 flow (`offline` access, `calendar.events.readonly` scope) with zero external SDK dependencies (native Node.js `fetch` client).
+  - Cryptographically signed HMAC state parameter (15-minute expiration) preventing CSRF and injection attacks.
+  - AES-256-GCM token encryption at rest with autonomous token refresh lifecycle (< 5-minute expiration threshold) against `oauth2.googleapis.com`.
+  - Rolling 14-day window background synchronization via BullMQ (15-minute repeatable worker) into `calendar_events` table with automatic pruning of removed events.
+  - Dashboard `📅 Upcoming Calendar` view with relative date groupings ("Today", "Tomorrow", day-of-week), time spans, locations, Google Calendar links, and on-demand "Sync Now" button.
+- **Read-Only GitHub Integration (Phase 5a):**
+  - Personal Access Token (PAT) authentication with AES-256-GCM encryption at rest (`INTEGRATION_ENCRYPTION_KEY`). Zero token leakage in API responses or logs.
+  - Project repository linking (`owner/repo`) with remote validation and strict tenant verification.
+  - Repeatable BullMQ worker polling every 15 minutes plus manual on-demand sync for open issues and pull requests into local database cache (`github_issues`, `github_pull_requests`).
+  - Dashboard `🐙 GitHub` tab in project view with searchable issue/PR tables and interactive task-to-issue linking badges (`🐙 #42 ↗`).
+- **Agentic Intelligence & Multi-Agent Workflows (Phase 4):**
+  - **Planner Agent:** Multi-agent LangGraph workflow analyzing project context (tasks, notes, documents, memories) to recommend actionable, structured task plans with dependency ordering. Human-in-the-loop review and transactional batch application (`POST /api/planner/apply`).
+  - **Continue Project Agent:** Deterministic context extraction synthesizing recent project activity, completed milestones, blockers, and high-impact next steps with confidence scoring.
+  - **Hierarchical Agent Runs Tracking:** Audit trail in `agent_runs` capturing execution status, input prompts, model metadata, token usage, and step-by-step tool invocations.
+  - **Project Context Engine:** Token-budgeted context assembler combining active tasks, recent notes, relevant document snippets, and memories.
+- **Unified RAG Retrieval & Memory Bank (Phase 3):**
+  - `HybridRetrievalService` combining PostgreSQL Full-Text Search (`ts_rank`) with 768-dimensional vector cosine distance (`<=>`) via Reciprocal Rank Fusion (RRF, $k=60$).
+  - Concrete Ollama embedding provider targeting `nomic-embed-text` with model version tracking and zero-downtime batch re-embedding CLI (`pnpm --filter @lifeos/backend ai:reembed`).
+  - Explicit Memory Bank supporting 4 categories (`fact`, `decision`, `preference`, `goal`) with non-destructive conflict resolution ($\ge 0.90$ similarity marks prior memories superseded).
+  - Asynchronous document ingestion pipeline (PDF, TXT, MD) with sliding-window chunking and Redis-backed BullMQ processing.
+  - System prompt anti-hallucination guardrail and interactive chat citation cards with relevance scores.
+- **Provider-Agnostic LLM Gateway & Deterministic Tools (Phase 2):**
+  - Internal `LLMProvider` abstraction with local Ollama (`qwen3:8b`, temperature `0.15`).
+  - Chain-of-Thought (CoT) suppression stripping `<think>...</think>` tokens in-stream to prevent raw reasoning leaks.
+  - Scoped tool registry with risk tiers (`READ_ONLY`, `WRITE`, `DESTRUCTIVE`, `EXTERNAL`) and max-5-calls-per-turn guardrail.
+  - Real-time Server-Sent Events (SSE) streaming chat with persistent conversations and activity tagging (`source: 'ai'`).
+- **Productivity Core & Multi-Tenant Foundation (Phases 0 & 1):**
+  - Dual-token authentication: short-lived 15-minute JWT access tokens and 30-day revocable, rotated refresh tokens in PostgreSQL.
+  - Comprehensive CRUD modules: Projects (with status tracking), Tasks (priorities, statuses, project linking), and Notes (markdown, tag arrays).
+  - Append-only activity timeline capturing all user, project, AI, and integration events.
+  - Rate limiting, security headers (Helmet), response compression, and global error handling.
 - **Continuous Integration (CI):**
   - GitHub Actions workflow (`.github/workflows/ci.yml`) on Node 22 (LTS) with containerized PostgreSQL 17 (`pgvector`) and Redis 7.
-  - Automatically verifies package compilation, database migrations, recursive typecheck, linting, 144 unit/integration tests, and production build.
+  - Runs shared build, database migrations, typecheck, linting, all 258 unit/integration tests, and production build.
 
 ---
 
@@ -84,7 +55,11 @@ LifeOS has completed **Phase 0 (Foundation & Hardening)**, **Phase 1 (Productivi
 - [Node.js](https://nodejs.org/) v22.13+ (Active LTS)
 - [pnpm](https://pnpm.io/) v9+ (or v11)
 - [Docker](https://www.docker.com/) & Docker Compose
-- [Ollama](https://ollama.com/) with `qwen3:8b` and `nomic-embed-text` pulled (`ollama pull qwen3:8b && ollama pull nomic-embed-text`)
+- [Ollama](https://ollama.com/) with `qwen3:8b` and `nomic-embed-text` pulled:
+  ```bash
+  ollama pull qwen3:8b
+  ollama pull nomic-embed-text
+  ```
 
 ### Setup
 
@@ -94,7 +69,10 @@ pnpm install
 
 # 2. Create environment file
 cp .env.example .env
-# Edit .env — set a strong JWT_SECRET (min 32 chars) and verify OLLAMA_BASE_URL
+# Edit .env:
+# - Set a strong JWT_SECRET (min 32 chars)
+# - Set INTEGRATION_ENCRYPTION_KEY (32-byte / 64-hex string for token encryption at rest)
+# - (Optional) Set GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET for Google Calendar OAuth
 
 # 3. Start PostgreSQL 17 and Redis 7
 docker compose up -d postgres redis
@@ -108,6 +86,7 @@ pnpm db:migrate
 # 6. Start development servers
 pnpm dev:backend   # Express API on http://localhost:4000
 pnpm dev:frontend  # Next.js app on http://localhost:3000
+pnpm dev:worker    # (Optional) BullMQ background sync worker
 ```
 
 ### Verify
@@ -116,7 +95,7 @@ pnpm dev:frontend  # Next.js app on http://localhost:3000
 # Health check
 curl http://localhost:4000/api/health
 
-# Run automated tests (148 tests across 22 test suites)
+# Run automated tests (258 tests across 38 test suites)
 pnpm test
 
 # Type-check all workspace packages
@@ -125,8 +104,11 @@ pnpm typecheck
 # Lint all workspace packages
 pnpm lint
 
-# Production build
+# Production build (Next.js Turbopack + backend tsc)
 pnpm build
+
+# Live Google Calendar cryptographic round-trip check
+pnpm --filter @lifeos/backend verify:google:live
 ```
 
 ---
@@ -137,11 +119,13 @@ All domain routes require `Authorization: Bearer <accessToken>` unless marked pu
 
 | Method | Endpoint | Description |
 |---|---|---|
+| **Auth** | | |
 | `POST` | `/api/auth/register` | Register new user (returns tokens) |
 | `POST` | `/api/auth/login` | Log in user (returns tokens) |
 | `POST` | `/api/auth/refresh` | Rotate refresh token & issue new pair |
 | `POST` | `/api/auth/logout` | Revoke refresh token |
-| `GET` | `/api/health` | Service health status |
+| `GET` | `/api/health` | Service health status *(public)* |
+| **Projects & Tasks** | | |
 | `POST` | `/api/projects` | Create a new project |
 | `GET` | `/api/projects` | List projects (supports `status`, pagination) |
 | `GET` | `/api/projects/:id` | Get project by ID |
@@ -153,6 +137,7 @@ All domain routes require `Authorization: Bearer <accessToken>` unless marked pu
 | `GET` | `/api/tasks/:id` | Get task by ID |
 | `PATCH` | `/api/tasks/:id` | Update task details or status |
 | `DELETE` | `/api/tasks/:id` | Soft-delete task |
+| **Notes & Knowledge** | | |
 | `POST` | `/api/notes` | Create note (with tags & optional `projectId`) |
 | `GET` | `/api/notes` | List notes (supports `projectId`, `tag`, pagination) |
 | `GET` | `/api/notes/search` | Search notes via hybrid vector + FTS search (`q=...`) |
@@ -164,18 +149,38 @@ All domain routes require `Authorization: Bearer <accessToken>` unless marked pu
 | `GET` | `/api/memories/:id` | Get memory by ID |
 | `DELETE` | `/api/memories/:id` | Soft-delete memory |
 | `POST` | `/api/documents` | Upload document file (multipart: PDF, TXT, MD) |
-| `POST` | `/api/documents/:id/versions` | Re-upload new document version (preserves old chunks) |
+| `POST` | `/api/documents/:id/versions` | Re-upload new document version |
 | `GET` | `/api/documents` | List documents (supports `status`, `projectId`) |
 | `GET` | `/api/documents/:id` | Get document metadata & active version |
 | `GET` | `/api/documents/:id/chunks` | Get document chunks & token counts |
 | `DELETE` | `/api/documents/:id` | Soft-delete document & cascades |
 | `GET` | `/api/activity` | List user activity timeline (chronological) |
+| **AI & Conversations** | | |
 | `POST` | `/api/conversations` | Create conversation (global or project-scoped) |
 | `GET` | `/api/conversations` | List user conversations (supports `projectId`) |
 | `GET` | `/api/conversations/:id` | Get conversation with messages & tool calls |
 | `PATCH` | `/api/conversations/:id` | Update conversation title |
-| `DELETE` | `/api/conversations/:id` | Delete conversation (cascade deletes messages/tool calls) |
+| `DELETE` | `/api/conversations/:id` | Delete conversation (cascades) |
 | `POST` | `/api/conversations/:id/messages` | Send message & stream assistant response via SSE |
+| **Agentic Intelligence** | | |
+| `POST` | `/api/planner/plan` | Generate AI project plan from context |
+| `POST` | `/api/planner/apply` | Apply approved plan recommendations into tasks |
+| `GET` | `/api/agent-runs` | List agent execution runs (supports `projectId`) |
+| `GET` | `/api/agent-runs/:id` | Get agent run audit details & step log |
+| **Integrations (GitHub & Google Calendar)** | | |
+| `POST` | `/api/integrations/github/connect` | Connect GitHub via Personal Access Token |
+| `DELETE` | `/api/integrations/github/disconnect` | Disconnect GitHub integration |
+| `GET` | `/api/integrations/github` | Get GitHub connection status |
+| `POST` | `/api/projects/:id/github/link` | Link project to GitHub repository (`owner/name`) |
+| `DELETE` | `/api/projects/:id/github/link` | Unlink project from GitHub repository |
+| `GET` | `/api/projects/:id/github` | Get linked GitHub repo data (issues, PRs, sync status) |
+| `POST` | `/api/projects/:id/github/sync` | Trigger on-demand sync of project GitHub data |
+| `GET` | `/api/integrations/google/auth-url` | Generate Google OAuth authorization URL |
+| `GET` | `/api/integrations/google/callback` | OAuth redirect callback *(public)* |
+| `GET` | `/api/integrations/google` | Get Google Calendar connection status |
+| `DELETE` | `/api/integrations/google/disconnect` | Disconnect Google Calendar integration |
+| `GET` | `/api/calendar/events` | List rolling 14-day cached calendar events |
+| `POST` | `/api/calendar/sync` | Trigger on-demand sync of primary Google Calendar |
 
 ---
 
@@ -185,7 +190,7 @@ All domain routes require `Authorization: Bearer <accessToken>` unless marked pu
 lifeos/
 ├── .github/
 │   └── workflows/
-│       └── ci.yml            # GitHub Actions CI workflow
+│       └── ci.yml            # GitHub Actions CI workflow (Node 22, PG 17, Redis 7)
 ├── docs/
 │   ├── architecture.md       # Architecture & module boundary guidelines
 │   ├── hld.md                # System-level High-Level Design
@@ -193,36 +198,45 @@ lifeos/
 ├── packages/
 │   ├── backend/              # Express.js 5 API (TypeScript, NodeNext)
 │   │   ├── src/
-│   │   │   ├── config/       # Typed env config (Zod-validated)
+│   │   │   ├── config/       # Typed env config with Zod validation
 │   │   │   ├── db/           # Drizzle ORM client + schemas (PostgreSQL + pgvector)
-│   │   │   │   └── schema/   # users, projects, tasks, notes, memories, documents, conversations...
-│   │   │   ├── lib/          # Shared utilities (errors, password hashing)
+│   │   │   │   └── schema/   # users, projects, tasks, notes, memories, documents,
+│   │   │   │                 # conversations, agent_runs, integrations, github_*, calendar_events...
+│   │   │   ├── lib/          # Shared utilities (encryption, errors, github/google clients)
 │   │   │   ├── middleware/   # auth (JWT), validation (Zod), rate limiting, error handling
-│   │   │   └── modules/      # Domain modules (peers — no cross-module repository imports)
-│   │   │       ├── activity/ # Activity event logging & timeline
-│   │   │       ├── ai/       # LLM gateway (Ollama), embeddings, hybrid retrieval, tools, SSE chat
-│   │   │       ├── auth/     # Dual-token auth, session management
-│   │   │       ├── documents/# Document ingestion pipeline, paragraph chunking, BullMQ worker
-│   │   │       ├── health/   # System health checks
-│   │   │       ├── memory/   # Explicit memory bank & conflict resolution
-│   │   │       ├── notes/    # Notes CRUD & hybrid search
-│   │   │       ├── projects/ # Project lifecycle management
-│   │   │       └── tasks/    # Task management with project linking
-│   │   ├── drizzle/          # Generated SQL migrations (0000, 0001, 0002, 0003, 0004)
+│   │   │   ├── modules/      # Domain modules (strict peer isolation)
+│   │   │   │   ├── activity/ # Append-only activity timeline
+│   │   │   │   ├── ai/       # LLM gateway (Ollama), hybrid retrieval, agents (Planner, Continue)
+│   │   │   │   ├── auth/     # Dual-token auth, session management
+│   │   │   │   ├── calendar/ # Google Calendar repository, sync engine, queue, worker
+│   │   │   │   ├── documents/# Document ingestion pipeline, chunking, BullMQ worker
+│   │   │   │   ├── github/   # GitHub sync service, repository links, queue, worker
+│   │   │   │   ├── health/   # System health checks
+│   │   │   │   ├── integrations/ # GitHub PAT & Google OAuth services, token lifecycle
+│   │   │   │   ├── memory/   # Explicit memory bank & conflict resolution
+│   │   │   │   ├── notes/    # Notes CRUD & hybrid search
+│   │   │   │   ├── projects/ # Project lifecycle management
+│   │   │   │   └── tasks/    # Task management with project linking
+│   │   │   ├── app.ts        # Express app factory
+│   │   │   ├── server.ts     # HTTP server entrypoint
+│   │   │   └── worker.ts     # BullMQ background worker entrypoint
+│   │   ├── drizzle/          # Generated SQL migrations (0000 through 0007)
 │   │   └── drizzle.config.ts
 │   ├── frontend/             # Next.js 16 app (Turbopack, TypeScript, Tailwind)
 │   │   └── src/
 │   │       ├── app/
 │   │       │   ├── dashboard/
-│   │       │   │   ├── components/ # ProjectSidebar, MemoryView, DocumentManagerView, ChatView...
-│   │       │   │   └── page.tsx    # Unified dashboard layout with Knowledge & Assistant views
+│   │       │   │   ├── components/ # ProjectSidebar, CalendarView, SettingsView, GitHubTabView,
+│   │       │   │   │               # MemoryView, DocumentManagerView, ChatView, PlannerView...
+│   │       │   │   └── page.tsx    # Unified dashboard layout
 │   │       │   ├── login/
 │   │       │   └── register/
-│   │       └── lib/          # Dual-token API client with auto-refresh
+│   │       └── lib/          # Typed API client with auto-refresh & error handling
 │   └── shared/               # Cross-cutting types & validation schemas
 │       └── src/
-│           ├── schemas/      # Zod validation schemas (memory, document, note, task, etc.)
+│           ├── schemas/      # Zod validation schemas (calendar, integration, memory, task, etc.)
 │           └── types/        # TypeScript DTOs, enums, RiskTier, SSE stream events
+├── scripts/                  # Migration runner and verification utilities
 ├── docker-compose.yml        # PostgreSQL 17 + Redis 7 services
 ├── docker-compose.dev.yml    # Development override
 └── tsconfig.base.json        # Monorepo TypeScript configuration
@@ -238,7 +252,7 @@ lifeos/
 | **Phase 1 — Productivity Core** | Projects, Tasks Linking, Notes FTS, Activity API, Dashboard | **Completed** |
 | **Phase 2 — AI Foundation** | AI Chat, LLM Gateway, Structured Tool Calling, AI Observability | **Completed** |
 | **Phase 3 — Memory & Knowledge** | Hybrid Search, Embeddings, Vector Index, Ingestion, RAG | **Completed** |
-| **Phase 4 — Agentic Intelligence** | Multi-Agent Planner, Continue Project, Reflection | Next |
-| **Phase 5 — Integrations** | GitHub, Google Calendar, External Services | Planned |
-| **Phase 6 — Evaluation & Production** | Observability, Evals, Security Hardening | Planned |
-
+| **Phase 4 — Agentic Intelligence** | Multi-Agent Planner, Continue Project, Execution Audit Logs | **Completed** |
+| **Phase 5a — Read-Only GitHub Integration** | PAT Connection, Repo Linking, Issue/PR Sync, Task Linking | **Completed** |
+| **Phase 5b — Read-Only Google Calendar** | OAuth 2.0 Flow, Token Refresh, 14-Day Sync, Upcoming Agenda | **Completed** |
+| **Phase 6 — Evaluation & Production** | Observability, Evals, Security Hardening, Production Deployment | Planned |
